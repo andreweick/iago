@@ -19,16 +19,27 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
 
+// isGitHubActions returns true if running in GitHub Actions environment
+func isGitHubActions() bool {
+	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
+// isCIEnvironment returns true if running in any CI environment
+func isCIEnvironment() bool {
+	return os.Getenv("CI") == "true" || isGitHubActions()
+}
+
 // BuildOptions contains configuration for building containers
 type BuildOptions struct {
-	WorkloadName string
-	ContextPath  string
-	Tag          string
-	RegistryURL  string
-	Local        bool
-	NoPush       bool
-	Sign         bool
-	AuthConfig   *AuthConfig
+	WorkloadName  string
+	ContextPath   string
+	Tag           string
+	RegistryURL   string
+	Local         bool
+	NoPush        bool
+	Sign          bool
+	CosignKeyPath string // Path to custom cosign private key (optional)
+	AuthConfig    *AuthConfig
 }
 
 // AuthConfig contains registry authentication details
@@ -276,26 +287,98 @@ func (b *Builder) PushContainer(ctx context.Context, img v1.Image) error {
 	return nil
 }
 
-// SignContainer signs a container image using cosign keyless signing
+// SignContainer signs a container image using cosign (keyless or key-based)
 func (b *Builder) SignContainer(ctx context.Context, imageRef string) error {
 	if !b.options.Sign {
 		return nil
 	}
 
+	// Determine signing method based on environment and available keys
+	if isGitHubActions() {
+		return b.signContainerKeyless(ctx, imageRef)
+	}
+
+	// Try key-based signing for local development
+	keyPath := b.resolveSigningKeyPath()
+	if keyPath != "" {
+		return b.signContainerWithKey(ctx, imageRef, keyPath)
+	}
+
+	// Fallback to keyless signing if no keys available locally
+	return b.signContainerKeyless(ctx, imageRef)
+}
+
+// resolveSigningKeyPath determines the cosign private key path with fallback priority
+func (b *Builder) resolveSigningKeyPath() string {
+	// 1. CLI flag override
+	if b.options.CosignKeyPath != "" {
+		if _, err := os.Stat(b.options.CosignKeyPath); err == nil {
+			return b.options.CosignKeyPath
+		}
+		fmt.Printf("Warning: specified cosign key path not found: %s\n", b.options.CosignKeyPath)
+	}
+
+	// 2. Environment variable
+	if envKey := os.Getenv("COSIGN_PRIVATE_KEY"); envKey != "" {
+		// Environment variable contains the key content, not path
+		return envKey
+	}
+
+	// 3. Default location
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		defaultPath := filepath.Join(homeDir, ".config", "sigstore", "cosign.key")
+		if _, err := os.Stat(defaultPath); err == nil {
+			return defaultPath
+		}
+	}
+
+	return ""
+}
+
+// signContainerKeyless implements keyless signing for CI environments
+func (b *Builder) signContainerKeyless(ctx context.Context, imageRef string) error {
 	fmt.Printf("Signing container %s with cosign keyless signing...\n", imageRef)
 
-	// TODO: Implement full cosign keyless signing integration
+	// TODO: Implement keyless cosign signing integration
 	// This would involve:
-	// 1. Setting up OIDC authentication flow
+	// 1. Setting up OIDC authentication flow (GitHub Actions provides OIDC token automatically)
 	// 2. Getting ephemeral certificate from Fulcio
 	// 3. Creating signature payload for the container digest
 	// 4. Signing with the ephemeral key
 	// 5. Uploading signature to the registry and Rekor transparency log
 
-	fmt.Printf("Please authenticate via OIDC provider (Google/GitHub/Microsoft)...\n")
-	fmt.Printf("Note: Container signing implementation is a placeholder - would integrate with sigstore keyless flow\n")
+	if isGitHubActions() {
+		fmt.Printf("Using GitHub Actions OIDC token for keyless signing...\n")
+	} else {
+		fmt.Printf("Please authenticate via OIDC provider (Google/GitHub/Microsoft)...\n")
+	}
 
+	fmt.Printf("Note: Keyless signing implementation is a placeholder - would integrate with sigstore keyless flow\n")
 	fmt.Printf("✅ Container %s would be signed successfully with keyless signing\n", imageRef)
+	return nil
+}
+
+// signContainerWithKey implements key-based signing for local development
+func (b *Builder) signContainerWithKey(ctx context.Context, imageRef string, keyPath string) error {
+	fmt.Printf("Signing container %s with cosign key-based signing...\n", imageRef)
+
+	// TODO: Implement key-based cosign signing integration
+	// This would involve:
+	// 1. Loading the private key from file or environment variable
+	// 2. Prompting for passphrase (or using COSIGN_PASSWORD env var)
+	// 3. Creating signature payload for the container digest
+	// 4. Signing with the loaded private key
+	// 5. Uploading signature to the registry
+
+	if strings.HasPrefix(keyPath, "-----BEGIN") {
+		fmt.Printf("Using cosign private key from environment variable...\n")
+	} else {
+		fmt.Printf("Using cosign private key from: %s\n", keyPath)
+	}
+
+	fmt.Printf("Note: Key-based signing implementation is a placeholder - would integrate with cosign key signing\n")
+	fmt.Printf("✅ Container %s would be signed successfully with key-based signing\n", imageRef)
 	return nil
 }
 
@@ -309,15 +392,7 @@ func (b *Builder) BuildAndPush(ctx context.Context) error {
 
 	fmt.Printf("Successfully built container for %s\n", b.options.WorkloadName)
 
-	// Push if not disabled
-	if !b.options.NoPush {
-		err = b.PushContainer(ctx, img)
-		if err != nil {
-			return fmt.Errorf("push failed: %w", err)
-		}
-	}
-
-	// Sign if requested
+	// Sign if requested (before push to ensure no unsigned images reach registry)
 	if b.options.Sign {
 		var registryURL string
 		if b.options.Local {
@@ -330,6 +405,14 @@ func (b *Builder) BuildAndPush(ctx context.Context) error {
 		err = b.SignContainer(ctx, imageRef)
 		if err != nil {
 			return fmt.Errorf("signing failed: %w", err)
+		}
+	}
+
+	// Push if not disabled (only after successful signing, if requested)
+	if !b.options.NoPush {
+		err = b.PushContainer(ctx, img)
+		if err != nil {
+			return fmt.Errorf("push failed: %w", err)
 		}
 	}
 

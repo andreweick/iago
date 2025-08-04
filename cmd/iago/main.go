@@ -153,7 +153,11 @@ func main() {
 					},
 					&cli.BoolFlag{
 						Name:  "sign",
-						Usage: "Sign container with cosign after building",
+						Usage: "Sign container with cosign (supports both key-based and keyless signing)",
+					},
+					&cli.StringFlag{
+						Name:  "cosign-key",
+						Usage: "Path to cosign private key for key-based signing (defaults to ~/.config/sigstore/cosign.key)",
 					},
 					&cli.StringFlag{
 						Name:  "tag",
@@ -737,6 +741,7 @@ func containerBuildCommand(ctx *cli.Context) error {
 	local := ctx.Bool("local")
 	noPush := ctx.Bool("no-push")
 	sign := ctx.Bool("sign")
+	cosignKey := ctx.String("cosign-key")
 	tag := ctx.String("tag")
 	token := ctx.String("token")
 
@@ -748,7 +753,7 @@ func containerBuildCommand(ctx *cli.Context) error {
 	defaults := loader.GetDefaults()
 
 	if buildAll {
-		return buildAllWorkloads(ctx, defaults, local, noPush, sign, tag, "", token)
+		return buildAllWorkloads(ctx, defaults, local, noPush, sign, cosignKey, tag, "", token)
 	}
 
 	// Single workload build
@@ -757,10 +762,10 @@ func containerBuildCommand(ctx *cli.Context) error {
 	}
 
 	workloadName := ctx.Args().Get(0)
-	return buildSingleWorkload(ctx, workloadName, defaults, local, noPush, sign, tag, "", token)
+	return buildSingleWorkload(ctx, workloadName, defaults, local, noPush, sign, cosignKey, tag, "", token)
 }
 
-func buildSingleWorkload(ctx *cli.Context, workloadName string, defaults machine.Defaults, local, noPush, sign bool, tag, username, token string) error {
+func buildSingleWorkload(ctx *cli.Context, workloadName string, defaults machine.Defaults, local, noPush, sign bool, cosignKey, tag, username, token string) error {
 	contextPath := fmt.Sprintf("containers/%s", workloadName)
 
 	// Check if container directory exists
@@ -788,14 +793,15 @@ func buildSingleWorkload(ctx *cli.Context, workloadName string, defaults machine
 
 	// Configure build options
 	buildOptions := container.BuildOptions{
-		WorkloadName: workloadName,
-		ContextPath:  contextPath,
-		Tag:          tag,
-		RegistryURL:  defaults.ContainerRegistry.URL,
-		Local:        local,
-		NoPush:       noPush,
-		Sign:         sign,
-		AuthConfig:   authConfig,
+		WorkloadName:  workloadName,
+		ContextPath:   contextPath,
+		Tag:           tag,
+		RegistryURL:   defaults.ContainerRegistry.URL,
+		Local:         local,
+		NoPush:        noPush,
+		Sign:          sign,
+		CosignKeyPath: cosignKey,
+		AuthConfig:    authConfig,
 	}
 
 	// Create builder and build
@@ -817,7 +823,7 @@ func buildSingleWorkload(ctx *cli.Context, workloadName string, defaults machine
 	return nil
 }
 
-func buildAllWorkloads(ctx *cli.Context, defaults machine.Defaults, local, noPush, sign bool, tag, username, token string) error {
+func buildAllWorkloads(ctx *cli.Context, defaults machine.Defaults, local, noPush, sign bool, cosignKey, tag, username, token string) error {
 	// Find all container directories
 	containersDir := "containers"
 	entries, err := os.ReadDir(containersDir)
@@ -851,7 +857,7 @@ func buildAllWorkloads(ctx *cli.Context, defaults machine.Defaults, local, noPus
 	// Build each workload
 	for _, workload := range workloads {
 		fmt.Printf("\n--- Building %s ---\n", workload)
-		err := buildSingleWorkload(ctx, workload, defaults, local, noPush, sign, tag, username, token)
+		err := buildSingleWorkload(ctx, workload, defaults, local, noPush, sign, cosignKey, tag, username, token)
 		if err != nil {
 			fmt.Printf("❌ Failed to build %s: %v\n", workload, err)
 			// Continue with other workloads instead of failing completely

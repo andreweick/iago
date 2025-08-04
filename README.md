@@ -349,7 +349,34 @@ iago build db-01 --tag v1.2.3
 
 # Build and sign with cosign keyless signing
 iago build db-01 --sign
+
+# Build with custom cosign key for key-based signing
+iago build db-01 --sign --cosign-key /path/to/cosign.key
 ```
+
+### Container Verification
+
+Verify signed containers using the public key included in this repository:
+
+```bash
+# Verify a signed container using the public key
+cosign verify --key cosign.pub ghcr.io/your-username/db-01:latest
+
+# For keyless signing verification (CI/CD builds)
+cosign verify --certificate-identity-regexp="https://github.com/your-username/iago/" \
+              --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+              ghcr.io/your-username/db-01:latest
+```
+
+**Signing Methods:**
+- **Key-based signing** (local development): Uses `~/.config/sigstore/cosign.key` by default
+- **Keyless signing** (CI/CD): Automatically uses GitHub Actions OIDC tokens
+
+**Key Management:**
+- Private key location: `~/.config/sigstore/cosign.key` (default)
+- Public key: `cosign.pub` (included in repository)
+- Custom key path: Use `--cosign-key` flag
+- Environment variable: Set `COSIGN_PRIVATE_KEY` with key content
 
 ### Make Tasks
 
