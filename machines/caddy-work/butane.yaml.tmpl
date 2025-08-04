@@ -1,0 +1,213 @@
+variant: fcos
+version: 1.5.0
+passwd:
+  users:
+    - name: "{{ .User.Username }}"
+      groups:
+{{ range .User.Groups }}        - {{ . }}
+{{ end }}
+      password_hash: "{{ .User.PasswordHash }}"
+{{ if .UserSSHKeys }}      ssh_authorized_keys:
+{{ range .UserSSHKeys }}        - {{ . }}
+{{ end }}{{ end }}
+    - name: "{{ .Admin.Username }}"
+      groups:
+{{ range .Admin.Groups }}        - {{ . }}
+{{ end }}
+      password_hash: "{{ .Admin.PasswordHash }}"
+
+storage:
+  directories:
+    - path: /etc/iago
+      mode: "0755"
+    - path: /etc/iago/secrets
+      mode: "0700"
+    - path: /etc/iago/containers
+      mode: "0755"
+    - path: /var/log/iago
+      mode: "0755"
+    - path: /var/lib/{{ .Machine.Name }}
+      mode: "0755"
+    - path: /var/log/{{ .Machine.Name }}
+      mode: "0755"
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: "{{ .Machine.Name }}"
+    - path: /etc/iago/machine-info
+      mode: 0644
+      contents:
+        inline: |
+          MACHINE_NAME={{ .Machine.Name }}
+          FQDN={{ .Machine.FQDN }}
+    # Container configuration (mutable)
+    - path: /etc/iago/containers/{{ .Machine.Name }}.env
+      mode: 0644
+      contents:
+        inline: |
+          CONTAINER_IMAGE={{ .Machine.ContainerImage }}:{{ .Machine.ContainerTag }}
+          CONTAINER_NAME=bootc-{{ .Machine.Name }}
+          HEALTH_CHECK_WAIT=30
+          UPDATE_STRATEGY=latest
+    # Generated secrets
+    - path: /etc/iago/secrets/caddy-work-password
+      mode: 0600
+      contents:
+        inline: {{ .GeneratedSecrets.Password }}
+    - path: /etc/iago/rollback-instructions.txt
+      mode: 0644
+      contents:
+        inline: |
+          BOOTC ROLLBACK INSTRUCTIONS
+          ==========================
+
+          To rollback to previous bootc image:
+          1. sudo systemctl stop bootc@{{ .Machine.Name }}
+          2. sudo podman tag {{ .Machine.ContainerImage }}:previous {{ .Machine.ContainerImage }}:{{ .Machine.ContainerTag }}
+          3. sudo systemctl start bootc@{{ .Machine.Name }}
+
+          To view available images:
+          sudo podman images | grep {{ .Machine.ContainerImage }}
+
+          To pin to specific version:
+          1. Edit /etc/iago/containers/{{ .Machine.Name }}.env
+          2. Change CONTAINER_IMAGE to specific tag
+          3. Change UPDATE_STRATEGY to pinned
+          4. sudo systemctl restart bootc@{{ .Machine.Name }}
+
+          To switch to different container entirely:
+          1. Edit /etc/iago/containers/{{ .Machine.Name }}.env
+          2. Update CONTAINER_IMAGE to new image:tag
+          3. sudo systemctl restart bootc@{{ .Machine.Name }}
+    # Management scripts
+    - path: /usr/local/bin/bootc-manager.sh
+      mode: 0755
+      contents:
+        local: bootc-manager.sh
+    - path: /usr/local/bin/bootc-run.sh
+      mode: 0755
+      contents:
+        local: bootc-run.sh
+    - path: /usr/local/bin/bootc-update.sh
+      mode: 0755
+      contents:
+        local: bootc-update.sh
+    - path: /usr/local/bin/motd.sh
+      mode: 0755
+      contents:
+        local: motd.sh
+    - path: /etc/profile.d/motd.sh
+      mode: 0644
+      contents:
+        inline: |
+          # Run custom MOTD on login
+          /usr/local/bin/motd.sh
+{{ if .Machine.MACAddress }}    - path: /etc/NetworkManager/system-connections/{{ default .Network.DefaultNetworkInterface .Machine.NetworkInterface }}.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id={{ default .Network.DefaultNetworkInterface .Machine.NetworkInterface }}
+          type=ethernet
+          interface-name={{ default .Network.DefaultNetworkInterface .Machine.NetworkInterface }}
+          
+          [ethernet]
+          cloned-mac-address={{ .Machine.MACAddress }}
+          
+          [ipv4]
+          method=auto
+{{ end }}
+
+systemd:
+  units:
+    # Set timezone
+    - name: set-timezone.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Set system timezone
+        Before=multi-user.target
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/timedatectl set-timezone {{ .Network.Timezone }}
+        RemainAfterExit=true
+        [Install]
+        WantedBy=multi-user.target
+
+    # CoreOS auto-updates
+    - name: zincati.service
+      dropins:
+        - name: 55-update-strategy.conf
+          contents: |
+            [Service]
+            Environment="ZINCATI_STRATEGY={{ .Updates.Strategy }}"
+            Environment="ZINCATI_PERIODIC_TIME={{ .Updates.RebootTime }}"
+            Environment="ZINCATI_STREAM={{ .Updates.Stream }}"
+
+    # Enable Podman
+    - name: podman.service
+      enabled: true
+
+    # Generic bootc template (handles any container)
+    - name: bootc@.service
+      contents: |
+        [Unit]
+        Description=Bootc Container %i
+        After=network-online.target podman.service
+        Wants=network-online.target
+        Requires=podman.service
+        
+        [Service]
+        Type=notify
+        NotifyAccess=all
+        Restart=always
+        RestartSec=30
+        TimeoutStartSec=300
+        EnvironmentFile=/etc/iago/containers/%i.env
+        ExecStart=/usr/local/bin/bootc-run.sh %i
+        ExecStop=/usr/bin/podman stop -t 30 bootc-%i
+        
+        [Install]
+        WantedBy=multi-user.target
+
+    # Container manager (auto-starts containers based on config files)
+    - name: bootc-manager.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Bootc Container Manager
+        After=multi-user.target
+        
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/bootc-manager.sh
+        RemainAfterExit=true
+        
+        [Install]
+        WantedBy=multi-user.target
+
+    # Container update timer
+    - name: bootc-update.timer
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Daily bootc container update check
+        [Timer]
+        OnCalendar=*-*-* {{ .Bootc.UpdateTime }}
+        Persistent=true
+        [Install]
+        WantedBy=timers.target
+
+    # Container update service
+    - name: bootc-update.service
+      contents: |
+        [Unit]
+        Description=Update bootc containers
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/bootc-update.sh
+        StandardOutput=journal
+        StandardError=journal

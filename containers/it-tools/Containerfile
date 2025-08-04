@@ -1,0 +1,75 @@
+# Multi-stage build for it-tools using Node.js and serve
+FROM quay.io/fedora/fedora-bootc:42
+
+# Pin versions for reproducible builds
+ARG NODE_VERSION=20
+ARG PNPM_VERSION=8.15.6
+ARG SERVE_VERSION=14.2.1
+ARG IT_TOOLS_VERSION=main
+
+# Install Node.js and build tools
+RUN dnf install -y \
+    nodejs-${NODE_VERSION}* \
+    npm \
+    git \
+    && dnf clean all
+
+# Install pnpm and serve globally with pinned versions
+RUN npm install -g pnpm@${PNPM_VERSION} serve@${SERVE_VERSION}
+
+# Install 1Password CLI (standard in all iago containers)
+RUN curl -sSfL https://downloads.1password.com/linux/tar/stable/x86_64/1password-cli-latest-linux_amd64.tar.gz | \
+    tar -xzO op > /usr/local/bin/op && \
+    chmod +x /usr/local/bin/op
+
+# Create it-tools system user
+RUN useradd -r -s /bin/false -d /var/lib/it-tools it-tools
+
+# Create 1Password token placeholder (auto-activating)
+RUN mkdir -p /etc/iago/secrets && \
+    echo "# No secrets configured for this container" > /etc/iago/secrets/1password-token.txt && \
+    echo "# To enable: replace with your service account token" >> /etc/iago/secrets/1password-token.txt && \
+    chmod 0600 /etc/iago/secrets/1password-token.txt
+
+# Build it-tools application
+WORKDIR /tmp/build
+RUN git clone https://github.com/CorentinTh/it-tools.git . && \
+    git checkout ${IT_TOOLS_VERSION} && \
+    pnpm install --frozen-lockfile && \
+    pnpm build
+
+# Install built application to /usr/share
+RUN mkdir -p /usr/share/it-tools && \
+    cp -r dist/* /usr/share/it-tools/ && \
+    chown -R it-tools:it-tools /usr/share/it-tools
+
+# Copy the shared 1Password templates - DO NOT create these files yourself
+COPY containers/_shared/systemd/secrets-service.template /etc/systemd/system/it-tools-secrets.service
+COPY containers/_shared/systemd/secrets-watcher.template /etc/systemd/system/it-tools-secrets-watcher.path
+COPY containers/_shared/scripts/fetch-secrets-template.sh /usr/local/bin/fetch-it-tools-secrets.sh
+
+# Replace {SERVICE} placeholders with actual service name
+RUN sed -i 's/{SERVICE}/it-tools/g' /etc/systemd/system/it-tools-secrets.service && \
+    sed -i 's/{SERVICE}/it-tools/g' /etc/systemd/system/it-tools-secrets-watcher.path && \
+    sed -i 's/{SERVICE}/it-tools/g' /usr/local/bin/fetch-it-tools-secrets.sh && \
+    chmod +x /usr/local/bin/fetch-it-tools-secrets.sh
+
+# Enable 1Password infrastructure
+RUN systemctl enable it-tools-secrets.service it-tools-secrets-watcher.path
+
+# Copy scripts from scripts/* to /usr/local/bin/
+COPY containers/it-tools/scripts/* /usr/local/bin/
+RUN chmod +x /usr/local/bin/*
+
+# Configure for bootc@it-tools.service template
+# The container will be started by the bootc@ template service
+# Runtime configuration comes from /etc/iago/containers/it-tools.env
+
+# Expose port 80 for reverse proxy
+EXPOSE 80
+
+# Cleanup build directory
+RUN rm -rf /tmp/build
+
+# Run bootc container lint
+RUN bootc container lint

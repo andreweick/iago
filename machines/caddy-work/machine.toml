@@ -1,0 +1,6 @@
+name = "caddy-work"
+fqdn = "caddy-work.spouterinn.org"
+mac_address = "02:05:56:54:22:07"
+network_interface = "ens18"
+container_image = "ghcr.io/andreweick/caddy-work"
+container_tag = "latest"
