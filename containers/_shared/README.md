@@ -88,6 +88,37 @@ sed -i 's/{SERVICE}/caddy/g' caddy-work/scripts/fetch-caddy-secrets.sh
 - 1Password service account token manually placed in `/etc/iago/secrets/1password-token.txt`
 - Corresponding systemd service and watcher units (use templates)
 
+### `scripts/backup-template.sh`
+
+Automated backup script for nightly rsync to NAS.
+
+**Usage:**
+1. Copy to your container's `scripts/` directory as `backup-{SERVICE}.sh`
+2. Replace `{SERVICE}` with your service name
+3. Configure backup paths in `/etc/iago/backup/{SERVICE}.conf`
+4. Add SSH key via 1Password integration
+
+**Example:**
+```bash
+# For postgres container
+cp _shared/scripts/backup-template.sh postgres/scripts/backup-postgres.sh
+sed -i 's/{SERVICE}/postgres/g' postgres/scripts/backup-postgres.sh
+```
+
+**Provides:**
+- Rsync-based efficient backups to NAS
+- Retention management (default 7 days)
+- Pre-backup hooks for application consistency
+- Bandwidth limiting to prevent network saturation
+- Automatic SSH key detection (exits gracefully if not configured)
+
+**Configuration:**
+- Global settings: `/etc/iago/backup/config.env`
+- Per-service overrides: `/etc/iago/backup/{SERVICE}.conf`
+
+**Pre-backup hooks:**
+Create `/usr/local/bin/pre-backup-{SERVICE}.sh` for database dumps or other consistency measures.
+
 ## Systemd Templates
 
 ### `systemd/secrets-service.template`
@@ -136,6 +167,51 @@ sed -i 's/{SERVICE}/postgres/g' postgres/systemd/postgres-secrets-watcher.path
 - Integration with systemd path units
 - Triggers secrets service on file modifications
 
+### `systemd/backup-service.template`
+
+Systemd service unit for running backups.
+
+**Usage:**
+1. Copy to your container's `systemd/` directory
+2. Rename to `{SERVICE}-backup.service`
+3. Replace `{SERVICE}` placeholders with your service name
+4. Adjust `ReadWritePaths` if your service backs up additional paths
+
+**Example:**
+```bash
+# For postgres container
+cp _shared/systemd/backup-service.template postgres/systemd/postgres-backup.service
+sed -i 's/{SERVICE}/postgres/g' postgres/systemd/postgres-backup.service
+```
+
+**Provides:**
+- One-shot service for backup execution
+- Security isolation and resource limits
+- Proper dependency ordering (after network and secrets)
+- Journal integration for logging
+
+### `systemd/backup-timer.template`
+
+Systemd timer unit for scheduled backups.
+
+**Usage:**
+1. Copy to your container's `systemd/` directory
+2. Rename to `{SERVICE}-backup.timer`
+3. Replace `{SERVICE}` placeholders
+4. Timer runs daily with 1-hour random delay
+
+**Example:**
+```bash
+# For photos container
+cp _shared/systemd/backup-timer.template photos/systemd/photos-backup.timer
+sed -i 's/{SERVICE}/photos/g' photos/systemd/photos-backup.timer
+```
+
+**Provides:**
+- Daily backup schedule (midnight with random delay)
+- Persistent timers (catches up missed runs)
+- Automatic enable during container build
+
 ## When to Use Templates vs Custom Files
 
 ### Use Templates For:
@@ -144,6 +220,7 @@ sed -i 's/{SERVICE}/postgres/g' postgres/systemd/postgres-secrets-watcher.path
 - **Basic health checks** that only verify service status
 - **Standard secret fetching** from 1Password
 - **Simple initialization** (directories, permissions)
+- **Standard backup patterns** (rsync to NAS with retention)
 
 ### Create Custom Files For:
 - **Complex initialization** (PostgreSQL database setup, Immich config generation)
@@ -174,12 +251,18 @@ All templates use `{SERVICE}` as the primary placeholder:
 # 1. Copy templates
 cp _shared/scripts/health-check-template.sh myservice/scripts/health.sh
 cp _shared/scripts/basic-init-template.sh myservice/scripts/init.sh
+cp _shared/scripts/backup-template.sh myservice/scripts/backup-myservice.sh
 cp _shared/systemd/secrets-service.template myservice/systemd/myservice-secrets.service
+cp _shared/systemd/backup-service.template myservice/systemd/myservice-backup.service
+cp _shared/systemd/backup-timer.template myservice/systemd/myservice-backup.timer
 
 # 2. Replace placeholders
 sed -i 's/{SERVICE}/myservice/g' myservice/scripts/health.sh
 sed -i 's/{SERVICE}/myservice/g' myservice/scripts/init.sh
+sed -i 's/{SERVICE}/myservice/g' myservice/scripts/backup-myservice.sh
 sed -i 's/{SERVICE}/myservice/g' myservice/systemd/myservice-secrets.service
+sed -i 's/{SERVICE}/myservice/g' myservice/systemd/myservice-backup.service
+sed -i 's/{SERVICE}/myservice/g' myservice/systemd/myservice-backup.timer
 
 # 3. If using 1Password secrets, copy and customize fetch script
 cp _shared/scripts/fetch-secrets-template.sh myservice/scripts/fetch-myservice-secrets.sh

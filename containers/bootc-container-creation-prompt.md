@@ -76,8 +76,8 @@ This project uses a specific bootc auto-update system with **STRICT PATTERNS** t
 ## MANDATORY: Use Shared Templates
 
 Before creating any files from scratch, check `containers/_shared/` for reusable templates:
-- **Scripts**: `basic-init-template.sh`, `health-check-template.sh`, `fetch-secrets-template.sh`
-- **Systemd**: `secrets-service.template`, `secrets-watcher.template`
+- **Scripts**: `basic-init-template.sh`, `health-check-template.sh`, `fetch-secrets-template.sh`, `backup-template.sh`
+- **Systemd**: `secrets-service.template`, `secrets-watcher.template`, `backup-service.template`, `backup-timer.template`
 - **Documentation**: Always read `_shared/README.md` for detailed usage instructions
 
 The _shared templates provide consistent patterns across all containers. Copy and customize them rather than creating files from scratch.
@@ -133,6 +133,31 @@ Create the following files in `containers/[CONTAINER_NAME]/`:
   ```
 
   **Note**: The fetch script template will need customization after deployment if you need real secrets. See the 1Password section below.
+
+- **Always install rsync for backups** (standard in all iago containers):
+  ```dockerfile
+  # Install rsync for automated backups (standard in all iago containers)
+  RUN dnf install -y rsync openssh-clients && dnf clean all
+  ```
+
+- **Copy backup infrastructure from _shared** (automatic for all containers):
+  ```dockerfile
+  # Copy the shared backup templates - DO NOT create these files yourself
+  COPY containers/_shared/scripts/backup-template.sh /usr/local/bin/backup-[name].sh
+  COPY containers/_shared/systemd/backup-service.template /etc/systemd/system/[name]-backup.service
+  COPY containers/_shared/systemd/backup-timer.template /etc/systemd/system/[name]-backup.timer
+
+  # Replace {SERVICE} placeholders with your actual service name
+  RUN sed -i 's/{SERVICE}/[name]/g' /usr/local/bin/backup-[name].sh && \
+      sed -i 's/{SERVICE}/[name]/g' /etc/systemd/system/[name]-backup.service && \
+      sed -i 's/{SERVICE}/[name]/g' /etc/systemd/system/[name]-backup.timer && \
+      chmod +x /usr/local/bin/backup-[name].sh
+
+  # Enable backup timer (runs nightly with random delay)
+  RUN systemctl enable [name]-backup.timer
+  ```
+
+  **Note**: Backups will only run when configured with NAS credentials after deployment.
 - Copy scripts from `scripts/*` to `/usr/local/bin/`
 - Make scripts executable: `RUN chmod +x /usr/local/bin/*`
 - **DO NOT include ENTRYPOINT or CMD**: Bootc containers boot via systemd, not container entrypoints. The `bootc@{name}.service` template handles application startup, not the container itself.
@@ -176,6 +201,11 @@ sed -i 's/{SERVICE}/[CONTAINER_NAME]/g' containers/[CONTAINER_NAME]/scripts/heal
 - **Update Strategies**:
   - How to update versions: Edit Containerfile, rebuild, push to registry
   - How to disable auto-updates via `/etc/iago/containers/[name].env`
+- **Backup Management**: Document the automated backup capability:
+  - "This container includes automated backup to NAS (requires configuration)"
+  - "Backup paths: /var/lib/[name] (default), configurable via /etc/iago/backup/[name].conf"
+  - "To enable: add SSH key via 1Password, configure NAS host"
+  - "Backups run nightly with 7-day retention"
 - **Troubleshooting**: Include checking `bootc-update.service` logs
 
 ## Customizing the Templates
@@ -280,6 +310,88 @@ podman run --rm --privileged \
 - 1Password service account tokens should have minimal vault access
 - No secrets ever stored in public repos or ignition files
 - Mock secrets only used in local testing environments
+
+## Automated Backup System (Always Ready):
+
+All iago containers include complete backup infrastructure by default. Like 1Password, it's auto-activating:
+
+### Backup Scenarios
+
+**Not configured** (default):
+- Container runs normally with no backup activity
+- Backup timer runs but exits successfully when no SSH key found
+
+**Configured**:
+- Add SSH key via 1Password to `/etc/iago/secrets/backup-ssh-key`
+- Configure NAS host in `/etc/iago/backup/config.env`
+- Backups run automatically every night
+
+### Configuring Backups After Deployment
+
+#### 1. Global configuration:
+```bash
+# Create global backup config
+sudo mkdir -p /etc/iago/backup
+sudo tee /etc/iago/backup/config.env << EOF
+NAS_HOST=192.168.1.100
+BACKUP_BASE=/volume1/backups
+RETENTION_DAYS=7
+BANDWIDTH_LIMIT=5000
+EOF
+```
+
+#### 2. Service-specific paths (optional):
+```bash
+# Override default backup paths if needed
+sudo tee /etc/iago/backup/[name].conf << EOF
+BACKUP_PATHS="/var/lib/[name] /etc/[name]"
+EOF
+```
+
+#### 3. Add SSH key via 1Password:
+Update your fetch-secrets script to include:
+```bash
+# Fetch backup SSH key
+if ! op read "op://iago/nas-backup/ssh-key" > "$SECRETS_DIR/backup-ssh-key" 2>/dev/null; then
+    echo "$LOG_PREFIX WARNING: Backup SSH key not found in 1Password"
+else
+    chmod 0600 "$SECRETS_DIR/backup-ssh-key"
+    echo "$LOG_PREFIX Backup SSH key configured"
+fi
+```
+
+### Pre-Backup Hooks
+
+For database consistency, create `/usr/local/bin/pre-backup-[name].sh`:
+```bash
+#!/bin/bash
+# Example: PostgreSQL dump before backup
+pg_dumpall -U postgres > /var/lib/postgresql/backup.sql
+```
+
+### Monitoring Backups
+
+```bash
+# Check backup timer status
+systemctl status [name]-backup.timer
+
+# View last backup run
+journalctl -u [name]-backup.service
+
+# Manually trigger backup
+systemctl start [name]-backup.service
+```
+
+### Local Testing
+
+Test backup functionality without NAS:
+```bash
+# Create mock SSH key
+echo "mock-key" > /tmp/mock-ssh-key
+
+# Test with local directory as "NAS"
+NAS_HOST=localhost BACKUP_BASE=/tmp/backups /usr/local/bin/backup-[name].sh
+```
 
 ### 5. FORBIDDEN FILES (DO NOT CREATE):
 - ❌ Individual systemd service files (like `[name]-app.service`)
@@ -546,6 +658,21 @@ systemctl start [name]-secrets.service
 # Verify 1Password CLI works (available in all containers)
 op --version
 op whoami
+```
+
+### Backup issues
+```bash
+# Check if backup is configured
+ls -la /etc/iago/secrets/backup-ssh-key
+
+# View backup logs
+journalctl -u [name]-backup.service
+
+# Test backup connectivity
+ssh -i /etc/iago/secrets/backup-ssh-key user@nas.local "echo 'Connected'"
+
+# Manually run backup
+systemctl start [name]-backup.service
 ```
 
 ### Testing locally before deployment

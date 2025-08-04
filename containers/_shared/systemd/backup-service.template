@@ -1,0 +1,26 @@
+[Unit]
+Description=Backup service for {SERVICE}
+Documentation=https://github.com/andreweick/iago
+After=network-online.target {SERVICE}-secrets.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup-{SERVICE}.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier={SERVICE}-backup
+
+# Security settings
+PrivateTmp=yes
+NoNewPrivileges=yes
+ReadOnlyPaths=/
+ReadWritePaths=/var/lib/{SERVICE} /var/log/{SERVICE}
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+# Resource limits
+CPUQuota=50%
+MemoryLimit=1G

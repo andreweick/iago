@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily backup timer for {SERVICE}
+Documentation=https://github.com/andreweick/iago
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+AccuracySec=10min
+
+[Install]
+WantedBy=timers.target
