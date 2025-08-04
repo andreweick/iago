@@ -178,8 +178,6 @@ storage:
 	assert.Contains(t, err.Error(), "required template variable '{{ .User.Username }}' not found")
 }
 
-
-
 func TestListCommand_OutputFormat(t *testing.T) {
 	// Create temporary directory structure
 	tempDir := t.TempDir()
@@ -285,4 +283,3 @@ network_interface = "%s"`, machine.intf)
 		}
 	}
 }
-

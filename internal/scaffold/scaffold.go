@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/andreweick/iago/internal/machine"
 )
@@ -24,27 +23,6 @@ func NewScaffolder(defaults machine.Defaults) *Scaffolder {
 	return &Scaffolder{
 		defaults: defaults,
 	}
-}
-
-// copyAndCustomizeTemplate copies a template file and replaces placeholders
-func (s *Scaffolder) copyAndCustomizeTemplate(templatePath, targetPath, serviceName string) error {
-	// Read template file
-	content, err := os.ReadFile(templatePath)
-	if err != nil {
-		return fmt.Errorf("failed to read template %s: %w", templatePath, err)
-	}
-
-	// Replace {SERVICE} placeholder with actual service name
-	customized := strings.ReplaceAll(string(content), "{SERVICE}", serviceName)
-
-	// Write customized content to target
-	return os.WriteFile(targetPath, []byte(customized), 0755)
-}
-
-// fileExists checks if a file exists
-func (s *Scaffolder) fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }
 
 func (s *Scaffolder) CreateMachineScaffold(opts ScaffoldOptions) error {
@@ -73,23 +51,22 @@ func (s *Scaffolder) createContainerStructure(opts ScaffoldOptions) error {
 }
 
 func (s *Scaffolder) createContainerFiles(containerDir string, opts ScaffoldOptions) error {
-	// Create directories
-	dirs := []string{
-		containerDir,
-		filepath.Join(containerDir, "scripts"),
-		filepath.Join(containerDir, "config"),
-		filepath.Join(containerDir, "systemd"),
-	}
-
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
+	// Create container directory
+	if err := os.MkdirAll(containerDir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", containerDir, err)
 	}
 
 	// Create Containerfile
 	if err := s.createContainerfile(containerDir, opts); err != nil {
 		return fmt.Errorf("failed to create Containerfile: %w", err)
+	}
+
+	// Copy bootc-container-creation-prompt.md to {name}-prompt.md
+	promptSource := "containers/bootc-container-creation-prompt.md"
+	promptTarget := filepath.Join(containerDir, opts.MachineName+"-prompt.md")
+
+	if err := s.copyPromptFile(promptSource, promptTarget); err != nil {
+		return fmt.Errorf("failed to copy prompt file: %w", err)
 	}
 
 	return nil
@@ -101,114 +78,14 @@ func (s *Scaffolder) createContainerfile(containerDir string, opts ScaffoldOptio
 	return os.WriteFile(filepath.Join(containerDir, "Containerfile"), []byte(containerfile), 0644)
 }
 
-func (s *Scaffolder) createScripts(containerDir string, opts ScaffoldOptions) error {
-	scriptsDir := filepath.Join(containerDir, "scripts")
-
-	// Use shared templates if available, otherwise create basic scripts
-	sharedScriptsDir := "containers/_shared/scripts"
-
-	// Copy and customize init script from shared template
-	initTemplatePath := filepath.Join(sharedScriptsDir, "basic-init-template.sh")
-	initTargetPath := filepath.Join(scriptsDir, "init.sh")
-
-	if s.fileExists(initTemplatePath) {
-		if err := s.copyAndCustomizeTemplate(initTemplatePath, initTargetPath, opts.MachineName); err != nil {
-			return fmt.Errorf("failed to copy init template: %w", err)
-		}
-	} else {
-		// Fallback to hardcoded script if template doesn't exist
-		initScript := fmt.Sprintf(`#!/bin/bash
-# Init script for %s
-set -euo pipefail
-
-echo "[$(date)] Initializing %s container..."
-
-# Create required directories
-mkdir -p /var/lib/%s /var/log/%s
-
-# Set proper permissions
-chown -R %s-app:%s-app /var/lib/%s /var/log/%s
-
-echo "[$(date)] %s container initialized successfully"
-`, opts.MachineName, opts.MachineName, opts.MachineName,
-			opts.MachineName, opts.MachineName, opts.MachineName,
-			opts.MachineName, opts.MachineName, opts.MachineName)
-
-		if err := os.WriteFile(initTargetPath, []byte(initScript), 0755); err != nil {
-			return err
-		}
+// copyPromptFile copies the bootc-container-creation-prompt.md file to the target location
+func (s *Scaffolder) copyPromptFile(source, target string) error {
+	content, err := os.ReadFile(source)
+	if err != nil {
+		return fmt.Errorf("failed to read prompt file %s: %w", source, err)
 	}
 
-	// Copy and customize health check script from shared template
-	healthTemplatePath := filepath.Join(sharedScriptsDir, "health-check-template.sh")
-	healthTargetPath := filepath.Join(scriptsDir, "health.sh")
-
-	if s.fileExists(healthTemplatePath) {
-		if err := s.copyAndCustomizeTemplate(healthTemplatePath, healthTargetPath, opts.MachineName); err != nil {
-			return fmt.Errorf("failed to copy health template: %w", err)
-		}
-	} else {
-		// Fallback to hardcoded script if template doesn't exist
-		healthScript := fmt.Sprintf(`#!/bin/bash
-# Health check script for %s
-set -euo pipefail
-
-# Simple health check - verify service is running
-if systemctl is-active --quiet %s-app.service; then
-    echo "[$(date)] %s service is healthy"
-    exit 0
-else
-    echo "[$(date)] %s service is not running"
-    exit 1
-fi
-`, opts.MachineName, opts.MachineName, opts.MachineName, opts.MachineName)
-
-		if err := os.WriteFile(healthTargetPath, []byte(healthScript), 0755); err != nil {
-			return err
-		}
-	}
-
-	// Create a simple hello world script (always custom, no shared template needed)
-	helloScript := fmt.Sprintf(`#!/bin/bash
-# Simple hello world service for %s
-set -euo pipefail
-
-echo "[$(date)] Starting hello world service for %s"
-
-# Log hello messages every 30 seconds
-while true; do
-    echo "[$(date)] Hello from %s! Service is running..."
-    sleep 30
-done
-`, opts.MachineName, opts.MachineName, opts.MachineName)
-
-	return os.WriteFile(filepath.Join(scriptsDir, "hello.sh"), []byte(helloScript), 0755)
-}
-
-func (s *Scaffolder) createSystemdService(containerDir string, opts ScaffoldOptions) error {
-	systemdDir := filepath.Join(containerDir, "systemd")
-
-	serviceFile := fmt.Sprintf(`[Unit]
-Description=%s Hello World Service
-After=multi-user.target
-
-[Service]
-Type=simple
-User=%s-app
-Group=%s-app
-WorkingDirectory=/var/lib/%s
-ExecStartPre=/usr/local/bin/init.sh
-ExecStart=/usr/local/bin/hello.sh
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-`, opts.MachineName, opts.MachineName, opts.MachineName, opts.MachineName)
-
-	return os.WriteFile(filepath.Join(systemdDir, opts.MachineName+"-app.service"), []byte(serviceFile), 0644)
+	return os.WriteFile(target, content, 0644)
 }
 
 func (s *Scaffolder) addMachineToConfig(opts ScaffoldOptions) error {

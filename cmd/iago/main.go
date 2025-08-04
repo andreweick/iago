@@ -483,7 +483,6 @@ func validateMachineTemplate(templatePath string) error {
 
 	templateContent := string(content)
 
-
 	// Check for expected Go template variables
 	requiredVariables := []string{
 		"{{ .User.Username }}",

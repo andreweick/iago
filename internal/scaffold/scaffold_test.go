@@ -64,6 +64,12 @@ func TestScaffolder_CreateMachineScaffold_WithMachineButane(t *testing.T) {
 	// Create workloads directory to trigger new structure
 	require.NoError(t, os.MkdirAll("workloads", 0755))
 
+	// Create the prompt file that will be copied
+	require.NoError(t, os.MkdirAll("containers", 0755))
+	promptContent := "# Bootc Container Creation Prompt\nTest prompt content"
+	err = os.WriteFile("containers/bootc-container-creation-prompt.md", []byte(promptContent), 0644)
+	require.NoError(t, err)
+
 	// Create scaffolder
 	defaults := machine.Defaults{
 		ContainerRegistry: machine.ContainerRegistryConfig{
@@ -93,9 +99,30 @@ func TestScaffolder_CreateMachineScaffold_WithMachineButane(t *testing.T) {
 	_, err = os.Stat(machinePath)
 	assert.NoError(t, err, "machine.toml should be created")
 
+	// Verify Containerfile was created
 	containerfilePath := filepath.Join("containers", "test-machine", "Containerfile")
 	_, err = os.Stat(containerfilePath)
 	assert.NoError(t, err, "Containerfile should be created")
+
+	// Verify prompt file was created
+	promptPath := filepath.Join("containers", "test-machine", "test-machine-prompt.md")
+	_, err = os.Stat(promptPath)
+	assert.NoError(t, err, "prompt file should be created")
+
+	// Verify no scripts directory was created
+	scriptsPath := filepath.Join("containers", "test-machine", "scripts")
+	_, err = os.Stat(scriptsPath)
+	assert.True(t, os.IsNotExist(err), "scripts directory should not be created")
+
+	// Verify no systemd directory was created
+	systemdPath := filepath.Join("containers", "test-machine", "systemd")
+	_, err = os.Stat(systemdPath)
+	assert.True(t, os.IsNotExist(err), "systemd directory should not be created")
+
+	// Verify no config directory was created
+	configPath := filepath.Join("containers", "test-machine", "config")
+	_, err = os.Stat(configPath)
+	assert.True(t, os.IsNotExist(err), "config directory should not be created")
 }
 
 func TestScaffoldCreatesYamlFiles(t *testing.T) {
@@ -110,6 +137,12 @@ func TestScaffoldCreatesYamlFiles(t *testing.T) {
 
 	// Create workloads directory to trigger new structure
 	require.NoError(t, os.MkdirAll("workloads", 0755))
+
+	// Create the prompt file that will be copied
+	require.NoError(t, os.MkdirAll("containers", 0755))
+	promptContent := "# Bootc Container Creation Prompt\nTest prompt content"
+	err = os.WriteFile("containers/bootc-container-creation-prompt.md", []byte(promptContent), 0644)
+	require.NoError(t, err)
 
 	// Create scaffolder
 	defaults := machine.Defaults{
