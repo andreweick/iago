@@ -70,6 +70,16 @@ func main() {
 						Value: true,
 						Usage: "Generate MAC address for homelab machines",
 					},
+					&cli.BoolFlag{
+						Name:    "machine-only",
+						Aliases: []string{"m"},
+						Usage:   "Create only machine configuration (config, template, ignition)",
+					},
+					&cli.BoolFlag{
+						Name:    "container-only",
+						Aliases: []string{"c"},
+						Usage:   "Create only container scaffold (directory, Containerfile, prompt)",
+					},
 				},
 			},
 			{
@@ -193,6 +203,13 @@ func initCommand(ctx *cli.Context) error {
 	machineName := ctx.Args().Get(0)
 	domain := ctx.String("domain")
 	generateMAC := ctx.Bool("generate-mac")
+	machineOnly := ctx.Bool("machine-only")
+	containerOnly := ctx.Bool("container-only")
+
+	// Validate flag combinations
+	if machineOnly && containerOnly {
+		return exitWithError("Error: --machine-only and --container-only flags are mutually exclusive", 1)
+	}
 
 	// Load defaults to get MAC prefix
 	loader := machine.NewConfigLoader()
@@ -202,9 +219,9 @@ func initCommand(ctx *cli.Context) error {
 
 	defaults := loader.GetDefaults()
 
-	// Generate MAC if requested
+	// Generate MAC if requested (only needed for machine config)
 	var macAddress string
-	if generateMAC {
+	if generateMAC && !containerOnly {
 		var err error
 		macAddress, err = machine.GenerateMAC(machine.DefaultMACPrefix)
 		if err != nil {
@@ -212,8 +229,11 @@ func initCommand(ctx *cli.Context) error {
 		}
 	}
 
-	// Generate FQDN using machine name
-	fqdn := fmt.Sprintf("%s.%s", machineName, domain)
+	// Generate FQDN using machine name (only needed for machine config)
+	var fqdn string
+	if !containerOnly {
+		fqdn = fmt.Sprintf("%s.%s", machineName, domain)
+	}
 
 	// Create scaffolder
 	scaffolder := scaffold.NewScaffolder(defaults)
@@ -228,36 +248,69 @@ func initCommand(ctx *cli.Context) error {
 
 	// Display what will be created
 	fmt.Printf("Initializing machine: %s\n", machineName)
-	fmt.Printf("  FQDN: %s\n", fqdn)
-	if macAddress != "" {
-		fmt.Printf("  MAC Address: %s\n", macAddress)
-	}
-	fmt.Printf("\nCreating:\n")
-	fmt.Printf("  ✓ Container scaffold: containers/%s/\n", machineName)
-	fmt.Printf("  ✓ Machine config: machines/%s/machine.toml\n", machineName)
-	fmt.Printf("  ✓ Ignition file: output/ignition/%s.ign\n", machineName)
-
-	// Create the scaffold
-	if err := scaffolder.CreateMachineScaffold(opts); err != nil {
-		return exitWithError(fmt.Sprintf("Error creating machine scaffold: %v", err), 1)
-	}
-
-	// Generate ignition file
-	builder, err := build.NewBuilder()
-	if err != nil {
-		fmt.Printf("Warning: Could not generate ignition file: %v\n", err)
-	} else {
-		outputFile := fmt.Sprintf("output/ignition/%s.ign", machineName)
-		if err := builder.GenerateMachine(machineName, outputFile); err != nil {
-			fmt.Printf("Warning: Could not generate ignition file: %v\n", err)
+	if !containerOnly {
+		fmt.Printf("  FQDN: %s\n", fqdn)
+		if macAddress != "" {
+			fmt.Printf("  MAC Address: %s\n", macAddress)
 		}
 	}
 
+	fmt.Printf("\nCreating:\n")
+
+	var err error
+	switch {
+	case containerOnly:
+		fmt.Printf("  ✓ Container scaffold: containers/%s/\n", machineName)
+		err = scaffolder.CreateContainerScaffoldOnly(opts)
+	case machineOnly:
+		fmt.Printf("  ✓ Machine config: machines/%s/machine.toml\n", machineName)
+		fmt.Printf("  ✓ Butane template: machines/%s/butane.yaml.tmpl\n", machineName)
+		fmt.Printf("  ✓ Ignition file: output/ignition/%s.ign\n", machineName)
+		err = scaffolder.CreateMachineConfigOnly(opts)
+	default:
+		// Default behavior: create both
+		fmt.Printf("  ✓ Container scaffold: containers/%s/\n", machineName)
+		fmt.Printf("  ✓ Machine config: machines/%s/machine.toml\n", machineName)
+		fmt.Printf("  ✓ Butane template: machines/%s/butane.yaml.tmpl\n", machineName)
+		fmt.Printf("  ✓ Ignition file: output/ignition/%s.ign\n", machineName)
+		err = scaffolder.CreateMachineScaffold(opts)
+	}
+
+	if err != nil {
+		return exitWithError(fmt.Sprintf("Error creating scaffold: %v", err), 1)
+	}
+
+	// Generate ignition file (only for machine-only and default modes)
+	if !containerOnly {
+		builder, err := build.NewBuilder()
+		if err != nil {
+			fmt.Printf("Warning: Could not generate ignition file: %v\n", err)
+		} else {
+			outputFile := fmt.Sprintf("output/ignition/%s.ign", machineName)
+			if err := builder.GenerateMachine(machineName, outputFile); err != nil {
+				fmt.Printf("Warning: Could not generate ignition file: %v\n", err)
+			}
+		}
+	}
+
+	// Success message and next steps
 	fmt.Printf("\n🎉 Machine '%s' initialized successfully!\n", machineName)
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("1. Customize the container: containers/%s/\n", machineName)
-	fmt.Printf("2. Build the container: iago container build %s\n", machineName)
-	fmt.Printf("3. Use ignition file: output/ignition/%s.ign\n", machineName)
+
+	switch {
+	case containerOnly:
+		fmt.Printf("1. Customize the container: containers/%s/\n", machineName)
+		fmt.Printf("2. Build the container: iago container build %s\n", machineName)
+		fmt.Printf("3. Create machine config: iago init --machine-only %s\n", machineName)
+	case machineOnly:
+		fmt.Printf("1. Create container scaffold: iago init --container-only %s\n", machineName)
+		fmt.Printf("2. Build the container: iago container build %s\n", machineName)
+		fmt.Printf("3. Use ignition file: output/ignition/%s.ign\n", machineName)
+	default:
+		fmt.Printf("1. Customize the container: containers/%s/\n", machineName)
+		fmt.Printf("2. Build the container: iago container build %s\n", machineName)
+		fmt.Printf("3. Use ignition file: output/ignition/%s.ign\n", machineName)
+	}
 
 	return nil
 }

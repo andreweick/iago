@@ -44,6 +44,26 @@ func (s *Scaffolder) CreateMachineScaffold(opts ScaffoldOptions) error {
 	return nil
 }
 
+// CreateMachineConfigOnly creates only the machine configuration (config, template)
+func (s *Scaffolder) CreateMachineConfigOnly(opts ScaffoldOptions) error {
+	// Create machine config entry
+	if err := s.addMachineToConfig(opts); err != nil {
+		return fmt.Errorf("failed to add machine to config: %w", err)
+	}
+
+	return nil
+}
+
+// CreateContainerScaffoldOnly creates only the container scaffold
+func (s *Scaffolder) CreateContainerScaffoldOnly(opts ScaffoldOptions) error {
+	// Create container directory structure
+	if err := s.createContainerStructure(opts); err != nil {
+		return fmt.Errorf("failed to create container structure: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Scaffolder) createContainerStructure(opts ScaffoldOptions) error {
 	// Create container in containers directory
 	containerDir := filepath.Join("containers", opts.MachineName)

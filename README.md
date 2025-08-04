@@ -20,8 +20,14 @@ Always stays the same (in his core nature): His character remains fundamentally 
 Initialize a new machine with container scaffold, configuration, and ignition file:
 
 ```bash
-# Basic initialization (uses default domain: spouterinn.org)
+# Full initialization - creates both machine config and container scaffold (default)
 iago init my-app
+
+# Create only machine configuration (config, template, ignition file)
+iago init --machine-only db-server
+
+# Create only container scaffold (directory, Containerfile, prompt)
+iago init --container-only web-server
 
 # Initialize with custom domain
 iago init --domain example.com web-server
@@ -31,13 +37,26 @@ iago init --generate-mac=false db-server
 
 # Initialize with specific domain and no MAC
 iago init --domain organmorgan.com --generate-mac=false nas-01
+
+# List all configured machines
+iago list
 ```
 
 **What iago init creates:**
+
+*Default (no flags) - Full initialization:*
 - Container scaffold: `containers/{machine-name}/`
 - Machine config: `machines/{machine-name}/machine.toml`
 - Machine template: `machines/{machine-name}/butane.yaml.tmpl`
 - Ignition file: `output/ignition/{machine-name}.ign`
+
+*With `--machine-only` flag:*
+- Machine config: `machines/{machine-name}/machine.toml`
+- Machine template: `machines/{machine-name}/butane.yaml.tmpl`
+- Ignition file: `output/ignition/{machine-name}.ign`
+
+*With `--container-only` flag:*
+- Container scaffold: `containers/{machine-name}/`
 
 ### iago container build
 
@@ -277,7 +296,9 @@ iago/
 ```bash
 # Initialize new machine: create config, container scaffold, and ignition file
 iago init --domain spouterinn.org db-02
-iago init --generate-mac=false db-03  # Skip MAC generation
+iago init --generate-mac=false db-03    # Skip MAC generation
+iago init --machine-only db-04          # Create only machine configuration
+iago init --container-only web-app      # Create only container scaffold
 
 # List all configured machines (with alias)
 iago list
