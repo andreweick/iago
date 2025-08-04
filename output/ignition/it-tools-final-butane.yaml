@@ -1,0 +1,221 @@
+variant: fcos
+version: 1.5.0
+passwd:
+  users:
+    - name: "maeick"
+      groups:
+        - sudo
+        - wheel
+
+      password_hash: "$6$AdHNLeqwqojfhuki$3APvnKEXh5Qn2PR8QPHy.pF7m1L5onRnw6Rn2s1tx66GHRBEVgHolKQxQXKKPGW.S3rv47f0yEl6IhMcXA0lt/"
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDFK7rb6mvox/RlgC6Ltv0Mn/vqXY1myLjo/EYgrLrq2BgvjQT7bM/Poc/Qj0L0DP4jS2hI0cmS/AUUpJMZswiY1xpYfNXkp267PNVU8xDNxDlSMrSB4JFtzmE/v61Z/Y2fY+q0Rft3YD6S6j/hAlqWwpXYurVCDaKKzFezY5fdug1zntGk+K56q+iNpykMM6+zUddPSXhGxqgjTMwYh/XXSWTplB+hiZ9c4vgdUZXvPXgslPFl67702m8N9SkN4b2BelPzFkD18DZI+3bjdiUHYAy0HsGGaqdl62ol5OmGc31YiPFJh9KRAxsQvczOab+huy/fqierr3i40G6GDw5ToSIGcY6PHbD0ROxpLWnTy64/gYDUtjVAmHf5duMB94FvE4yBr7Mil46kUSDR0Nuv9JnSvFwY1/EEoymTH87a2kgm89dY02tSiq4WAj53sAiKpwJNbZYD8pSEqpoAjJuBb1SFiDaCNhjk5QuscMT7mFLEJ8peXyYR9uPU9rbMVB+OBxQenhGddxAbbld2Dl5XTR9GI8migdRSCqMN5KXZ9v/XSlTZsS0YGsDmDR/kIZbcHPTvRtYSSj3ZnRM0kG0Vh0nrwTHylsjme2S9j7VDVu1ZlTEmbQ/DBuKPGl5KCT0mZHlVt0gkBGj2c163XZeS7TefxVwMja/jKOKl3rbXmQ==
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGUUee06iP+CO2XUANghG9ANjhVj1hOzyrb+TDHRa5mM
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJldmPLBuDgtd+95XfPdncBYpxWfcXLaCX7lwM5GLCq
+        - sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINT90Xxeiy0635MyF58fEcSi6CBTbZgamjaXJWWQzgKsAAAABHNzaDo=
+        - sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIMnNlp+jjWUkf9Y1vy3X5DExLvV8/NMbGyebNYeKL+UPAAAABHNzaDo=
+        - sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIEIZmMBCBex/Txo9odL1KvrGHxDybZR/ivRMNL62nlFzAAAABHNzaDo=
+        - sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIFAHMCqhPSbpposrEDabZnw3R3648c9JlYDT/2c/IihyAAAABHNzaDo=
+
+    - name: "admin"
+      groups:
+        - sudo
+        - wheel
+
+      password_hash: "$6$VcugxwlWVNK8G/GF$JOrUqw178WeymEugDqPIfQGpedFog2HNJEYuYfpfo.HvjBvOlaX3/OajZwQfgRPcCI12laZ0RkfR9.uDZKd4f/"
+
+storage:
+  directories:
+    - path: /etc/iago
+      mode: 0755
+    - path: /etc/iago/secrets
+      mode: 0700
+    - path: /etc/iago/containers
+      mode: 0755
+    - path: /var/log/iago
+      mode: 0755
+    - path: /var/lib/it-tools
+      mode: 0755
+    - path: /var/log/it-tools
+      mode: 0755
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: "it-tools"
+    - path: /etc/iago/machine-info
+      mode: 0644
+      contents:
+        inline: |
+          MACHINE_NAME=it-tools
+          FQDN=it-tools.spouterinn.org
+    # Container configuration (mutable)
+    - path: /etc/iago/containers/it-tools.env
+      mode: 0644
+      contents:
+        inline: |
+          CONTAINER_IMAGE=ghcr.io/andreweick/it-tools:latest
+          CONTAINER_NAME=bootc-it-tools
+          HEALTH_CHECK_WAIT=30
+          UPDATE_STRATEGY=latest
+    # Generated secrets
+    - path: /etc/iago/secrets/it-tools-password
+      mode: 0600
+      contents:
+        inline: FOVwv2n5H_dXAsjwTe0AUw84Bd_VW2iVX4c5yGSw6JI=
+    - path: /etc/iago/rollback-instructions.txt
+      mode: 0644
+      contents:
+        inline: |
+          BOOTC ROLLBACK INSTRUCTIONS
+          ==========================
+
+          To rollback to previous bootc image:
+          1. sudo systemctl stop bootc@it-tools
+          2. sudo podman tag ghcr.io/andreweick/it-tools:previous ghcr.io/andreweick/it-tools:latest
+          3. sudo systemctl start bootc@it-tools
+
+          To view available images:
+          sudo podman images | grep ghcr.io/andreweick/it-tools
+
+          To pin to specific version:
+          1. Edit /etc/iago/containers/it-tools.env
+          2. Change CONTAINER_IMAGE to specific tag
+          3. Change UPDATE_STRATEGY to pinned
+          4. sudo systemctl restart bootc@it-tools
+
+          To switch to different container entirely:
+          1. Edit /etc/iago/containers/it-tools.env
+          2. Update CONTAINER_IMAGE to new image:tag
+          3. sudo systemctl restart bootc@it-tools
+    # Management scripts
+    - path: /usr/local/bin/bootc-manager.sh
+      mode: 0755
+      contents:
+        local: bootc-manager.sh
+    - path: /usr/local/bin/bootc-run.sh
+      mode: 0755
+      contents:
+        local: bootc-run.sh
+    - path: /usr/local/bin/bootc-update.sh
+      mode: 0755
+      contents:
+        local: bootc-update.sh
+    - path: /usr/local/bin/motd.sh
+      mode: 0755
+      contents:
+        local: motd.sh
+    - path: /etc/profile.d/motd.sh
+      mode: 0644
+      contents:
+        inline: |
+          # Run custom MOTD on login
+          /usr/local/bin/motd.sh
+    - path: /etc/NetworkManager/system-connections/ens18.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id=ens18
+          type=ethernet
+          interface-name=ens18
+          
+          [ethernet]
+          cloned-mac-address=02:05:56:f6:a4:6f
+          
+          [ipv4]
+          method=auto
+
+
+systemd:
+  units:
+    # Set timezone
+    - name: set-timezone.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Set system timezone
+        Before=multi-user.target
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/timedatectl set-timezone America/New_York
+        RemainAfterExit=true
+        [Install]
+        WantedBy=multi-user.target
+
+    # CoreOS auto-updates
+    - name: zincati.service
+      dropins:
+        - name: 55-update-strategy.conf
+          contents: |
+            [Service]
+            Environment="ZINCATI_STRATEGY=periodic"
+            Environment="ZINCATI_PERIODIC_TIME=03:00"
+            Environment="ZINCATI_STREAM=stable"
+
+    # Enable Podman
+    - name: podman.service
+      enabled: true
+
+    # Generic bootc template (handles any container)
+    - name: bootc@.service
+      contents: |
+        [Unit]
+        Description=Bootc Container %i
+        After=network-online.target podman.service
+        Wants=network-online.target
+        Requires=podman.service
+        
+        [Service]
+        Type=notify
+        NotifyAccess=all
+        Restart=always
+        RestartSec=30
+        TimeoutStartSec=300
+        EnvironmentFile=/etc/iago/containers/%i.env
+        ExecStart=/usr/local/bin/bootc-run.sh %i
+        ExecStop=/usr/bin/podman stop -t 30 bootc-%i
+        
+        [Install]
+        WantedBy=multi-user.target
+
+    # Container manager (auto-starts containers based on config files)
+    - name: bootc-manager.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Bootc Container Manager
+        After=multi-user.target
+        
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/bootc-manager.sh
+        RemainAfterExit=true
+        
+        [Install]
+        WantedBy=multi-user.target
+
+    # Container update timer
+    - name: bootc-update.timer
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Daily bootc container update check
+        [Timer]
+        OnCalendar=*-*-* 02:00:00
+        Persistent=true
+        [Install]
+        WantedBy=timers.target
+
+    # Container update service
+    - name: bootc-update.service
+      contents: |
+        [Unit]
+        Description=Update bootc containers
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/bootc-update.sh
+        StandardOutput=journal
+        StandardError=journal

@@ -1,0 +1,192 @@
+{
+  "ignition": {
+    "version": "3.4.0"
+  },
+  "passwd": {
+    "users": [
+      {
+        "groups": [
+          "sudo",
+          "wheel"
+        ],
+        "name": "maeick",
+        "passwordHash": "$6$AdHNLeqwqojfhuki$3APvnKEXh5Qn2PR8QPHy.pF7m1L5onRnw6Rn2s1tx66GHRBEVgHolKQxQXKKPGW.S3rv47f0yEl6IhMcXA0lt/",
+        "sshAuthorizedKeys": [
+          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDFK7rb6mvox/RlgC6Ltv0Mn/vqXY1myLjo/EYgrLrq2BgvjQT7bM/Poc/Qj0L0DP4jS2hI0cmS/AUUpJMZswiY1xpYfNXkp267PNVU8xDNxDlSMrSB4JFtzmE/v61Z/Y2fY+q0Rft3YD6S6j/hAlqWwpXYurVCDaKKzFezY5fdug1zntGk+K56q+iNpykMM6+zUddPSXhGxqgjTMwYh/XXSWTplB+hiZ9c4vgdUZXvPXgslPFl67702m8N9SkN4b2BelPzFkD18DZI+3bjdiUHYAy0HsGGaqdl62ol5OmGc31YiPFJh9KRAxsQvczOab+huy/fqierr3i40G6GDw5ToSIGcY6PHbD0ROxpLWnTy64/gYDUtjVAmHf5duMB94FvE4yBr7Mil46kUSDR0Nuv9JnSvFwY1/EEoymTH87a2kgm89dY02tSiq4WAj53sAiKpwJNbZYD8pSEqpoAjJuBb1SFiDaCNhjk5QuscMT7mFLEJ8peXyYR9uPU9rbMVB+OBxQenhGddxAbbld2Dl5XTR9GI8migdRSCqMN5KXZ9v/XSlTZsS0YGsDmDR/kIZbcHPTvRtYSSj3ZnRM0kG0Vh0nrwTHylsjme2S9j7VDVu1ZlTEmbQ/DBuKPGl5KCT0mZHlVt0gkBGj2c163XZeS7TefxVwMja/jKOKl3rbXmQ==",
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGUUee06iP+CO2XUANghG9ANjhVj1hOzyrb+TDHRa5mM",
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAJldmPLBuDgtd+95XfPdncBYpxWfcXLaCX7lwM5GLCq",
+          "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAINT90Xxeiy0635MyF58fEcSi6CBTbZgamjaXJWWQzgKsAAAABHNzaDo=",
+          "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIMnNlp+jjWUkf9Y1vy3X5DExLvV8/NMbGyebNYeKL+UPAAAABHNzaDo=",
+          "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIEIZmMBCBex/Txo9odL1KvrGHxDybZR/ivRMNL62nlFzAAAABHNzaDo=",
+          "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIFAHMCqhPSbpposrEDabZnw3R3648c9JlYDT/2c/IihyAAAABHNzaDo="
+        ]
+      },
+      {
+        "groups": [
+          "sudo",
+          "wheel"
+        ],
+        "name": "admin",
+        "passwordHash": "$6$VcugxwlWVNK8G/GF$JOrUqw178WeymEugDqPIfQGpedFog2HNJEYuYfpfo.HvjBvOlaX3/OajZwQfgRPcCI12laZ0RkfR9.uDZKd4f/"
+      }
+    ]
+  },
+  "storage": {
+    "directories": [
+      {
+        "path": "/etc/iago",
+        "mode": 493
+      },
+      {
+        "path": "/etc/iago/secrets",
+        "mode": 448
+      },
+      {
+        "path": "/etc/iago/containers",
+        "mode": 493
+      },
+      {
+        "path": "/var/log/iago",
+        "mode": 493
+      },
+      {
+        "path": "/var/lib/it-tools",
+        "mode": 493
+      },
+      {
+        "path": "/var/log/it-tools",
+        "mode": 493
+      }
+    ],
+    "files": [
+      {
+        "path": "/etc/hostname",
+        "contents": {
+          "compression": "",
+          "source": "data:,it-tools"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/iago/machine-info",
+        "contents": {
+          "compression": "",
+          "source": "data:,MACHINE_NAME%3Dit-tools%0AFQDN%3Dit-tools.spouterinn.org%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/iago/containers/it-tools.env",
+        "contents": {
+          "compression": "",
+          "source": "data:,CONTAINER_IMAGE%3Dghcr.io%2Fandreweick%2Fit-tools%3Alatest%0ACONTAINER_NAME%3Dbootc-it-tools%0AHEALTH_CHECK_WAIT%3D30%0AUPDATE_STRATEGY%3Dlatest%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/iago/secrets/it-tools-password",
+        "contents": {
+          "compression": "",
+          "source": "data:,FOVwv2n5H_dXAsjwTe0AUw84Bd_VW2iVX4c5yGSw6JI%3D"
+        },
+        "mode": 384
+      },
+      {
+        "path": "/etc/iago/rollback-instructions.txt",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/5SSzW7qMBCF936KeYFLdH9WSFdqSCMUlSZVMIuukHGGMMLYkT0kQurDV4EU9QdQ66V1fOZ8xzMpCplAWcxmkzh5gCyfy3KRyKzI5+L/1SOEdOCdMSult8AOGo8tuX2AlXOsgXaqxrH4PYKwrxyEQ2DcaTYQ2DUnzR3xL3bOBPFnUDWu2ikLrGqoN9qPyEXKVh47JL2N3uTj86hbIqMYA4u/FwIoz58T9DQtYQeqVWTUyuCJIIzF+2SnO3iB2mNza/zRsCHbNxMa1LQmDS36QM4eW0krYoiQdUSqdpF2lhVZ9OFsMULb9s0kG2VrhKTIZZzlabnMHuNp+sGYVd2DDsrF030s0+VclrFMp8/HzyFrsRL/vpTh8WodoSPWm/51Res1erQM55iAlsmjOfwQZtFUii/CWOyGpRlovpf0NQAA//97P92hvgIAAA=="
+        },
+        "mode": 420
+      },
+      {
+        "path": "/usr/local/bin/bootc-manager.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/4xW34/aRhB+918xt1jRXRWHNo8XIZVQuCIFrspV7UN0QcN6DKMzu9zuGgXl8r9XuzbGBtMLT2i98833zY/P7l31l6z6S7TryJKDhAoNW95ShpxHUQ8+au0kjLRyyIoMzFDhikzUg2Hh9AYdS8zzPViHxlmQh4sWlmgpBa38WcarwqBjrSDjnCywgj452Wdc6f4xqB9Fo/v538PpfPx5MbqfT6Z3iz+mnwei67KIZsPRn9P5eDGdT+4Xk+mncfPiBuWaFSWsMi2iiORag/gSX6fo6OYRHjxhVitYBoU1LGxKhcKrH61JPgFnjcelGkjZkHTa7IG+sXU24gy+wBUkKYi4S4OAxw/g1qQiAIBTNqPL+J1okGqyoLQr04sS9Bs7+DXK2FO/IwdVCUDhhiDTBlLKsMgdLGmNO9amruB8OBsPhChVJBmI+Ky2bQGtwPh6ZWgL4msbrhvlBWThIEkHkGTvbzqrMWvwvoW4iSoqeZNCyTBPTpezB9hokiWzY0lReLKozxfV+fUNfA+Jcy0xP8YtfMKBiH8Tjaekdgs/tAMRvy/POzlPdKHSszm5hbiN3kDowT+Ysw/3OcJiwBotGHou2FAKOzSMy5xsuM4ZXEGoc/IM4utxKqaz4V1Z7QNV0WhUF9d/0ShWntwhAjZsrd+GE9i3YJ94u2W1EjWaIVeYEjzjppyx8mwBVVq1xK2pboW/YvfW0UY6X9RwVYTl+z3+3i7Sj3dVlICXF3CmoGaaeimrS8AWMDeE6R5MobyyQ8GOCdkmKB3vCJLkuWByr+d+pYgPVfZXYDrYVduaW7oM3nKn/yFZIxyllrUXPxWZcfTDr9NfhjdovI0bdLTa38InrZ+CZxx81G5Jcsby4FAZG+sqw1CNVQ9bCo/w5s3BSroMrN+6/47Uru0vFzb3LM9Po0d1vXswwTxfonxqyH2QqIJcVPtztw8vrc61n+vLBfKO8BasxND1Ej3Pz9BtwxPKk0UIHWR4oOxD61VldekV0//FS/0Aqa7HorEuq1wvYYNOrikNMo+q/K9qVu0h8OiXz5NlVRwntf7TolrvaPWk6afxtf8UCO+gJrynenMc34v9PvHPJkaITrVq2EOYxxBUkxMwgFDK1oBdaOZpc9qfLQHPN6C7/oeV8q+oU+yP3Z8ZIPVmm5OjVPwXAAD//6PhYtSMCQAA"
+        },
+        "mode": 493
+      },
+      {
+        "path": "/usr/local/bin/bootc-run.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/3xUTY/bNhC981dMuD60B9kJFuhBhQ6qquwK3fUGXjdFkQYGLY2sQSlSJSllt4X/e0E5sb6KXgRh5s3Me49D3rzZHEltjsJWzKKDAFsNDTVYCpKM3cBPWrscEq2cIIUGdq1SaNgN3KFCQznY3FDjwGkwrYL8G9DCUVgsQCtA1ZHRqkblfL6kU2uEI60YS562+zjbprvDNn5MI756x0ex5Gn7Prs7/JztIr5Bl29InPRmGMFZuv14eJ89+Mr/KtuspgPWqDruVSUV5n8ClQPfr8wAX8g6y6iET/AGghL46tsQDp9/BFehYgAAmFcaeGqMNuHIn4lAKEkiXBtAodGC0u4yhV/6vJCDd6wkz+tZtyZHP2Timm/D7CU34uMrPgpJhXAIBv9qyWAxKeyEIXGU+FVQ8Dfw1T+DJ9ljfJeGwfn/lE3BPfsCS1JYACkYkVmKwR4qWukslNqAbrwpQo5oTc/nECf7X+OHaELSJ8Lg6PcwmJ3nmbP7NH7Y3x+S+zT55fBbnO198SIYBrdvz5zt0ud9vNsfPjw9ZMnvHjmNhIGQX8SrPXPGLi58Wn3n3f3+Mzw7YRyp07AyIaxm7vBF1bAYStQ4qRgJ7k/yQytlf/JSOLQOqBYnhJKMdYu2HjvhckGv12vONq01/aVudFELBY3vy5dU2Y2/zP3Eoc0XchVYJ1QhTAG96bM7iy+Yw3yGv/p/9BsQBKa+/nrNk9FjzQMKHVTaumugoWIWMNSRxBMW15DFvDXkXgPdOJDiiDIqyPqlukI6Ldsawb8cof8sEp0wof8sEqZV4WasCVUH/DFO7rNtenmqZqIGNbZQ2lH5GuVa1XpoUaGQrgryugDe2yd1LmRv4iW1thWfo0k5NJ2Q0e1bO88ZdIbQRrfzhPWbGjRoSBfRD9fC5Qr8GwAA//8GCism/QUAAA=="
+        },
+        "mode": 493
+      },
+      {
+        "path": "/usr/local/bin/bootc-update.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/5xX3W7bOBO911NMGX1tUlTxt7104cW6rpIY2yZFkqZYFFmDlkb2IDKpkpRbN/W7L0j9WJKVpLt3CcU583dmeHzwbDAnMZhzvfQ0Gggwl5BRhgmn1PMO4K2UJoKJFIaTQAWfspgbhKtIUWa8g/J/DTxNIZIioUWuMLZ/FgYa5lxjDFKAWSIpyAsAbRQ3uNh43uTi/Ho8PQ8vZ5OL85Pp6ezd9HLEBmiiAfGFHOygmPdhPDmbnoez6fnJxexk+j5sXlzxaEkCAxKJZN5ZOH5/fTabnIWTP2efx9PrEbu/h2OXz/EZ8tQsJ0uM7j5zMrDdMs/DaCmBffEPbYBHt3BluDIkFjB3NajjqFLIlIxQa2bL5KCAksatohoQk8LISLUB/E7aaI8S+ALPIIiB+X25M7h9Y2slPACAblCTh/F70SCWqEFIU7hnBeh3MvB/LyEb+kkuIkO2P7LKjIMmsUhxl41XfJnVB4dHcO+wUhnxdHdxJvgKR8z/jTW+oljPEkrt+evivDc3xyVb8BptCH4buWF9AFcyVxHaWlkPpKRYoTBgPbkbuvjO/Mp/y/qGp+SyVfg1J0vaNVfE5ylqd8P1KfgBzL/fFXb6YXwaDoNtu0l9yXzmSpBYDKFj7HoRY0ICYyABdXCvQN9RlpFYsBpUoclV4SOhVuroQHiemiLaTx/fja/D2dX15fg6PP1rxPz7ztEwSO2kmm0Bvzcfs4ub8PJy+i60tg9/HQb+3scS8iq8vJlOwhFzA/OHf9/u3fZYo1pThI9QwM2RpUAiqznTlph7PdjCYbVChuB3Uj1q0+SOsorZlNSbB0jDi4yEwPjFruGsi8VgBKy49nTTd9PZ4a11VoDs2lzG9Cvd5muEKFfK0ptWfIHANQwzhWuSuXbFUjJN5zy6cyaZjFdcgOGLHvpuWc/h/4YvtzUgg9e/D2JcD0SepvDzJxiVYzOgj/a8oFMRT1XAZ5XrzN7o8/1EBU84pRjbljuEHoCny1Uv45JvtvgqF3YcgYsYFGq72u0NgRhjXEWvN9rgKjIpkA54ZGiNEARfc0Jjcyn5/WQOlwW+dbczgm9kliDwW1GwXRo7p1VcTVf1tfqPA3BPlu15lZ+RoA2fU0o/cIebImbA/IdHuRf8BhUlm2bplu6x3NR3XJv/Y6n6ynVVuvJLI0hqDhT1aFfulaO6e5d5dMda0I/yvkNx9hi3/kVjehlQDiNEcpWlaDB2/ep9zJx9qvHxGuWR1RpJnqabcm/ED8OV49BCfbLqVMiEopcPbKmEvK3VDKdooJRb4NabzS5TtOJq0xANlVw7H38IR4wV0idIgPl7Qq69W1uG/uFCWSb/3YbrR/kJUW4giEcQJK+PSolTitZKIOoMI0qoKekSUtotBDItnRaIhhvrl8EtPH9epdGnuAat+8co1u3cukpqz8Evw7az42IDPI7JarmmItOebU6lMqzkeEB3Dl5a1DcQy+4eXaRyDituoiXGzo9FKnRHWYhaYcGtfS+scxLNN6MjEP1D+7PAUadpbAM42nu7KQGzJG0ZarXeI238hsBThTyuh6T5snfGxT7s3d521lUrj+Yj09PELnpTdsZS4P4PjLeP/q7Y7Q72TwAAAP//Jlsf6qYNAAA="
+        },
+        "mode": 493
+      },
+      {
+        "path": "/usr/local/bin/motd.sh",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/6RY3W4bxxW+51OcjJciGXW0lOKkKZV1ocp2bcBSDatu0bguMd4dklPtzqx3ZiXTki4KJLkoYsiNkxYtAjgXgXvboDfuTR/GLxA/QjE/+0euZAklfGHtzPnOOd+cv5kr7/mPGPcfETnr0HAmAL19+f3f4e3L58/gtzQORUJBCfD6MyEVJwkdILOv07kCe3OpaAJSEZXLTp4qltAx4xMReH37FxwDOdwHfLMXCxIBOaAZmdJRD3pHaca4Am/jpAfH8IRkUznoJDQR2byAmGS0AOjt3guCDSszAdRdG066XfQT8D54f3049DXKoDT/xZ/hjiDRCLyaSXAMb1/+8zvYMSpG4NV0Ie3MdSb3IZdkSuGQqRkckowzPu1ETO6PzffA60cT8FtMAu9D44akEfSk3/X93qDDJvAAkFfJI8BTBR8P4eEmqBnlHQAAs0wT8UcWoDf/+O7H16dvX371X9ShsaRLG+zShDlXvWrNmD8CYyGenWHkB8hH3gaCPvI+RAN00hug2jHeTyOiqIT+TRqJjMC2yOiv9iytFbevFraPkHY0FElCeAT4ALI0wUIqfXYr18CP6IHP8ziuuXwFfklVfZ8LIL1mv4ztl8DrL+2CjWsl5qDj8LZnNNyHicj0pimNILfGmWU2AUdXAxzBMUwzmgJ+DMjud9KoZqv+2a/jA5pJJnjg9c+H21pfxCuXxF3o9X/+STCCwYMh/tnaw1UdNTNKIsDrg1KhxQd4+/LrzxzPDmoEXtMa1CmlChrYBDL6SAgFTEJEYzKnUbnpImQ4aSe6yIaJSb00ziiRF+CjcLoJC4O191udrxPw5vT1j69PAe41REfg1Q1AFW9FzrQS6UAy+jhnGY10VSNpGs+LYKlwJmwprsgBYTF5FNNGaNFYk12FaJ5OMxJRwDg0khvXVtbrzG4VKPZQF6mtzP3imzIdK80YspxDT+aRaFHaKx1CnSUySkK//bzI3zzVAsaMjnPaeb03E4fwKeMhUazIOjaBNKOScnXhnNrKlUiIYqHz5HrGDmg2KpAXnY/MsgGiF44pi7mnZXRO/WHznRn1/V9BG4bdMepYqilupSLMs4xyHX5pLOaJ/q/LPrPLLV+qPrz522n5Af3GCo5QUbRrvXFQ0P0AMAfkLShDjV7S9PTFM9i2u0ewJFf4WUZJGSGf/cekXC3AuFAwETmPTOvpXIFdqg5Ftg+6d9r2YEv6ztY2kCjKqJQgdMCwhGRz4OV2RbMJCWnHrYwTEgZen6UQM74PUpPtKPDNccD9uz4cTamKGaebwCZ9X+/8vU/VjGb+AEqmNoE+YerkpOi7+Ckgr6amSdQF9Nf1wMoKvOcPh6PmP39JfW+gGUpIOI6YTGMyD5B3VFM2wjkv8/kEdcq2+uVzuCNCEsPtuzoktUn4quGyaRXjVIGzZ33jp2vDteHaemGHHowk6Klooz6NgKfHEdShTxTNOInHLA28fphnMWAJGCfkCTaz2gfAJqHgEzZdS2i9z8LxsYuPmvmoGri+fAY3HDjcvjsCr6bKzF0vftCxoYeuihozevxa69WDQ0ykglhMGXeob07/pacZHQS91e7vcDfB3Qi6t0bdnVF3D7qfape01NhIBV7fQGAO6+Dd37txryoDZVpNRNZnwdVN9knw0SZbXR2A481jCNCm/QsQWmavdPXrr+BOaeoIvMoCO0rt3YJ9OpfV/r84a/RXOys9ADwBfyYS6pslf03KmU9yNRMZe0qjsd66FvlsypligjciV8oZ3qfzKeWA40vBuNz9hRAqhG3BFWGcZnC7zOHC5Of/XtxUt5uq0GdkKvyEhDPGKTbDdd1EtzDWl4XA69sat7O1fev27o3x7tbOjQCdBXMMYa4AR72gB3iyYYufpNkBCx0e0j08xN5RXcvJmttjy1pRMqVpdKGKIWZS4ZwzpeNdzVMaOIF6v/Lqiha70xXYcxKuIeqgtdeL+mxVqWQSk1CxAz0MPM4ZVe9Q4AZNPfUiJ9jPcq6vIAPU2NW8Z1UaTaFYUAIYp5lIaabmwZZBvaGLsE47qUiStjNec8i1nZpOBA91/Xmw+PW9ANBwuR8tWF3UxcLwCBNO4vlTCnpZpoQDxpLxkAYL+I161OyTuzd1xlY1ap+LQ44WRsrF2bDFqFK0sdFNg60gxYkxbs+s9aRKeKlEmtJoadAsg9ZNnWVyas8zPUOJitCwWD0vIVA9KFMRJYRXgrpXSSX1NNHAanDccoy2yVcwLCHTJh0VnlkLvL7TzbhMaahaVGJsXYTe0dHabS21qx046Z3VgNoO91wzw4waBk2EmbwNSRzmsW4tEZlLIFNxhhdGlEaX9mPbyi14cVZyLek7O4uqrTQV4SxwHRJH7TCrXdlO43CBwPoc20Be7crlne5lY8GYqgQU9WFpA45pbYZ1H8/y1VwKyFyOyVQXuj70G4KAF9kYgA8ff3R1OITBoBXNnpCi0Tiyl4xzyWsZOy4VlK3B2aDQK9wDTB/D8Fwm9M8MG/biEiCv6Q30lYjIfKFXVIWrReH6/6lwXR+Pzp4zlbaU3ItBV4YWGXqGjloFfafahsrWUt+C2Ir2bqQFlJYClekOnOlClbtLdfFzK2OzcqkWv3vPisrFvn6xKtBi5YySWM3qL3TFz65UL3WuQtrP9vkjy3lLpaxZYt5HVlacOVZ0ji5Z7a/b9lpvTHqmbX8HevEKTJPRV+Jms0JnvxztGR/t25ue/Y7hzekP+pZ83zT46qG5vNq0Q33xjb082AeR4vZg4+hM9X+C4lBH4DVCQ9vx7edwy9A2Aq9xIhd6FXvxqhhrtXP1qLo4GX0uatSbd4LB0oTT/hhlnrsBdgWYIaaY9C2IeXZzQ429OZbjzTmvFw5yx+42kVC9X0C//d4xKN/UO/8LAAD//5x09uUPGQAA"
+        },
+        "mode": 493
+      },
+      {
+        "path": "/etc/profile.d/motd.sh",
+        "contents": {
+          "compression": "",
+          "source": "data:,%23%20Run%20custom%20MOTD%20on%20login%0A%2Fusr%2Flocal%2Fbin%2Fmotd.sh%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/NetworkManager/system-connections/ens18.nmconnection",
+        "contents": {
+          "compression": "",
+          "source": "data:;base64,W2Nvbm5lY3Rpb25dCmlkPWVuczE4CnR5cGU9ZXRoZXJuZXQKaW50ZXJmYWNlLW5hbWU9ZW5zMTgKCltldGhlcm5ldF0KY2xvbmVkLW1hYy1hZGRyZXNzPTAyOjA1OjU2OmY2OmE0OjZmCgpbaXB2NF0KbWV0aG9kPWF1dG8K"
+        },
+        "mode": 384
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "contents": "[Unit]\nDescription=Set system timezone\nBefore=multi-user.target\n[Service]\nType=oneshot\nExecStart=/usr/bin/timedatectl set-timezone America/New_York\nRemainAfterExit=true\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "set-timezone.service"
+      },
+      {
+        "dropins": [
+          {
+            "contents": "[Service]\nEnvironment=\"ZINCATI_STRATEGY=periodic\"\nEnvironment=\"ZINCATI_PERIODIC_TIME=03:00\"\nEnvironment=\"ZINCATI_STREAM=stable\"\n",
+            "name": "55-update-strategy.conf"
+          }
+        ],
+        "name": "zincati.service"
+      },
+      {
+        "enabled": true,
+        "name": "podman.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Bootc Container %i\nAfter=network-online.target podman.service\nWants=network-online.target\nRequires=podman.service\n\n[Service]\nType=notify\nNotifyAccess=all\nRestart=always\nRestartSec=30\nTimeoutStartSec=300\nEnvironmentFile=/etc/iago/containers/%i.env\nExecStart=/usr/local/bin/bootc-run.sh %i\nExecStop=/usr/bin/podman stop -t 30 bootc-%i\n\n[Install]\nWantedBy=multi-user.target\n",
+        "name": "bootc@.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Bootc Container Manager\nAfter=multi-user.target\n\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/bootc-manager.sh\nRemainAfterExit=true\n\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "bootc-manager.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Daily bootc container update check\n[Timer]\nOnCalendar=*-*-* 02:00:00\nPersistent=true\n[Install]\nWantedBy=timers.target\n",
+        "enabled": true,
+        "name": "bootc-update.timer"
+      },
+      {
+        "contents": "[Unit]\nDescription=Update bootc containers\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nExecStart=/usr/local/bin/bootc-update.sh\nStandardOutput=journal\nStandardError=journal",
+        "name": "bootc-update.service"
+      }
+    ]
+  }
+}
