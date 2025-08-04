@@ -28,8 +28,16 @@ func TestGetAuthConfig_Priority(t *testing.T) {
 	assert.Equal(t, "testuser", config.Username)
 	assert.Equal(t, "env", config.Source)
 
-	// Test no auth available
+	// Test no auth available - need to unset both GITHUB_TOKEN and OP_SERVICE_ACCOUNT_TOKEN
 	os.Unsetenv("GITHUB_TOKEN")
+	originalOpToken := os.Getenv("OP_SERVICE_ACCOUNT_TOKEN")
+	os.Unsetenv("OP_SERVICE_ACCOUNT_TOKEN")
+	defer func() {
+		if originalOpToken != "" {
+			os.Setenv("OP_SERVICE_ACCOUNT_TOKEN", originalOpToken)
+		}
+	}()
+
 	config, err = GetAuthConfig(ctx, "", "")
 	assert.Error(t, err)
 	assert.Nil(t, config)
