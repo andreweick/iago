@@ -268,7 +268,7 @@ release:
 # Clean generated files and build artifacts
 clean:
     @echo "🧹 Cleaning generated files..."
-    rm -rf bin/ output/ coverage.out coverage.html
+    rm -rf bin/ coverage.out coverage.html
 
 # Show binary size after build
 size: build

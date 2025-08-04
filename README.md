@@ -13,6 +13,60 @@ Never changes his mind: He consistently pursues his vengeful plot against Othell
 
 Always stays the same (in his core nature): His character remains fundamentally duplicitous and calculating throughout the play. Even when finally exposed, he maintains his silence, staying true to his secretive and manipulative nature to the very end.
 
+## Useful Commands
+
+### iago init
+
+Initialize a new machine with container scaffold, configuration, and ignition file:
+
+```bash
+# Basic initialization (uses default domain: spouterinn.org)
+iago init my-app
+
+# Initialize with custom domain
+iago init --domain example.com web-server
+
+# Initialize without MAC address generation
+iago init --generate-mac=false db-server
+
+# Initialize with specific domain and no MAC
+iago init --domain organmorgan.com --generate-mac=false nas-01
+```
+
+**What iago init creates:**
+- Container scaffold: `containers/{machine-name}/`
+- Machine config: `machines/{machine-name}/machine.toml`
+- Machine template: `machines/{machine-name}/butane.yaml.tmpl`
+- Ignition file: `output/ignition/{machine-name}.ign`
+
+### iago container build
+
+Build and push containers using pure Go (no Docker/Podman dependency):
+
+```bash
+# Build single container and push to registry
+iago container build my-app
+
+# Build for local testing (pushes to localhost:5000)
+iago container build my-app --local
+
+# Build only (in memory), don't push anywhere (for testing)
+iago container build my-app --no-push
+
+# Build and sign with cosign keyless signing
+iago container build my-app --sign
+
+# Build with explicit authentication
+iago container build my-app --username your-username --token your-token
+```
+
+**Container build features:**
+- Pure Go building (no Docker daemon required)
+- Automatic registry push to configured registry
+- Support for GitHub Container Registry (ghcr.io)
+- Local registry support for testing
+- Optional cosign signing
+
 ## Environment Variables and Secrets
 
 Iago requires minimal configuration to get started but supports multiple authentication methods for container registry access.
@@ -95,7 +149,7 @@ iago container build my-app
 ### Authentication Priority
 
 1. **CLI `--token` flag** (overrides everything)
-2. **`GITHUB_TOKEN` environment variable** 
+2. **`GITHUB_TOKEN` environment variable**
 3. **1Password via `OP_SERVICE_ACCOUNT_TOKEN`** (fetches from vault: `op://github/personal-access-token/credential`)
 4. **No authentication** (fails with helpful error message)
 
@@ -167,10 +221,10 @@ export OP_SERVICE_ACCOUNT_TOKEN="ops_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
    # Edit container files
    cd containers/db-01/
    # Edit Containerfile, scripts, config files, etc.
-   
+
    # Build and push using iago (pure Go, no Docker/Podman needed)
    ./bin/iago container build db-01
-   
+
    # Alternative: Use podman directly
    podman build -t ghcr.io/your-username/db-01:latest .
    podman push ghcr.io/your-username/db-01:latest
@@ -363,7 +417,7 @@ groups = ["sudo", "wheel"]             # User groups
 password_hash = "$6$..."
 
 [admin]
-username = "admin"                     # Admin user account  
+username = "admin"                     # Admin user account
 groups = ["sudo", "wheel"]
 password_hash = "$6$..."
 
@@ -507,13 +561,13 @@ systemd:
         [Unit]
         Description=Bootc Container %i
         After=network-online.target podman.service
-        
+
         [Service]
         Type=notify
         Restart=always
         EnvironmentFile=/etc/iago/containers/%i.env
         ExecStart=/usr/local/bin/bootc-run.sh %i
-        
+
         [Install]
         WantedBy=multi-user.target
 ```
@@ -686,7 +740,7 @@ Iago implements a robust container update system that ensures machines automatic
 The system operates on a dual-update schedule configured in `config/defaults.toml`:
 
 - **Container Updates**: Daily at **02:00** via `bootc-update.timer`
-- **CoreOS Updates**: Daily at **03:00** via Zincati 
+- **CoreOS Updates**: Daily at **03:00** via Zincati
 - **Health Check Wait**: 30 seconds after restart before validation
 
 ### How Container Updates Work
@@ -787,7 +841,7 @@ You can customize update timing in `config/defaults.toml`:
 [updates]
 stream = "stable"           # Fedora CoreOS stream
 strategy = "periodic"       # Update strategy
-period = "daily"           # Update frequency  
+period = "daily"           # Update frequency
 reboot_time = "03:00"      # CoreOS reboot time
 
 [bootc]
@@ -823,7 +877,7 @@ Iago implements a **flexible container management system** that completely decou
 The system uses a **template-based approach** with runtime configuration files:
 
 - **Generic systemd template**: `bootc@.service` handles any container
-- **Runtime configuration**: `/etc/iago/containers/{machine}.env` files control container behavior  
+- **Runtime configuration**: `/etc/iago/containers/{machine}.env` files control container behavior
 - **Per-machine templates**: Each machine has its own complete `butane.yaml.tmpl`
 - **Auto-management**: `bootc-manager.service` automatically starts containers based on config files
 
@@ -842,7 +896,7 @@ Each machine has a complete `machines/{machine}/butane.yaml.tmpl` file that incl
     After=network-online.target podman.service
     Wants=network-online.target
     Requires=podman.service
-    
+
     [Service]
     Type=notify
     NotifyAccess=all
@@ -852,7 +906,7 @@ Each machine has a complete `machines/{machine}/butane.yaml.tmpl` file that incl
     EnvironmentFile=/etc/iago/containers/%i.env
     ExecStart=/usr/local/bin/bootc-run.sh %i
     ExecStop=/usr/bin/podman stop -t 30 bootc-%i
-    
+
     [Install]
     WantedBy=multi-user.target
 ```
@@ -892,7 +946,7 @@ Configure how containers update by editing the `.env` file:
 # Always update to latest (default)
 UPDATE_STRATEGY=latest
 
-# Pin to current version - no automatic updates  
+# Pin to current version - no automatic updates
 UPDATE_STRATEGY=pinned
 
 # Use staging tag for testing before promoting to latest
@@ -1019,12 +1073,12 @@ The system supports running multiple containers on a single machine:
 ```bash
 # Add additional container configs:
 /etc/iago/containers/postgres.env      # Main database
-/etc/iago/containers/redis.env         # Cache service  
+/etc/iago/containers/redis.env         # Cache service
 /etc/iago/containers/backup.env        # Backup service
 
 # Results in services:
 bootc@postgres.service
-bootc@redis.service  
+bootc@redis.service
 bootc@backup.service
 ```
 
@@ -1116,7 +1170,7 @@ sudo podman healthcheck run bootc-postgres
 # Check current container config
 cat /etc/iago/containers/postgres.env
 
-# View update logs  
+# View update logs
 sudo journalctl -u bootc-update.service
 
 # Check update timer status
@@ -1358,7 +1412,7 @@ sudo cat /etc/iago/secrets/postgres-password
    - Creates machine-specific butane template `machines/my-new-service/butane.yaml.tmpl`
 2. **Customize the container**: Edit files in `containers/my-new-service/`
    - Modify `Containerfile` for your application
-   - Update scripts in `scripts/` directory  
+   - Update scripts in `scripts/` directory
    - Configure systemd services in `systemd/` directory
 3. **Build and push**: Use `iago container build my-new-service`
 4. **Generate ignition**: Run `iago ignite my-new-service`
