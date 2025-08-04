@@ -58,25 +58,28 @@ iago list
 *With `--container-only` flag:*
 - Container scaffold: `containers/{machine-name}/`
 
-### iago container build
+### iago build
 
 Build and push containers using pure Go (no Docker/Podman dependency):
 
 ```bash
 # Build single container and push to registry
-iago container build my-app
+iago build my-app
+
+# Build all containers
+iago build --all
 
 # Build for local testing (pushes to localhost:5000)
-iago container build my-app --local
+iago build my-app --local
 
 # Build only (in memory), don't push anywhere (for testing)
-iago container build my-app --no-push
+iago build my-app --no-push
 
 # Build and sign with cosign keyless signing
-iago container build my-app --sign
+iago build my-app --sign
 
 # Build with explicit authentication
-iago container build my-app --username your-username --token your-token
+iago build my-app --token your-token
 ```
 
 **Container build features:**
@@ -104,7 +107,7 @@ For pushing containers to registries, Iago supports multiple authentication meth
 #### 1. CLI Flags (Highest Priority)
 ```bash
 # Explicit authentication via command line
-iago container build my-app --username your-username --token your-token
+iago build my-app --token your-token
 ```
 
 #### 2. Environment Variables
@@ -138,7 +141,7 @@ $env:GITHUB_TOKEN="ghp_your_github_personal_access_token"
 Environment=GITHUB_TOKEN=ghp_your_github_personal_access_token
 
 # Then build containers
-iago container build my-app
+iago build my-app
 ```
 
 #### 3. 1Password Integration (Optional)
@@ -155,7 +158,7 @@ export OP_SERVICE_ACCOUNT_TOKEN="ops_your_service_account_token"
 
 # Iago will automatically fetch GitHub tokens from 1Password vault
 # Default vault location: op://github/personal-access-token/credential
-iago container build my-app
+iago build my-app
 ```
 
 ### Why These Are Needed
@@ -177,11 +180,11 @@ iago container build my-app
 ```bash
 # Work completely offline
 iago init my-app                           # Create machine and container
-iago container build my-app --no-push     # Build without pushing
+iago build my-app --no-push     # Build without pushing
 iago ignite my-app                         # Generate ignition file
 
 # Or use local registry
-iago container build my-app --local       # Push to localhost:5000
+iago build my-app --local       # Push to localhost:5000
 ```
 
 ### Production Setup
@@ -242,7 +245,7 @@ export OP_SERVICE_ACCOUNT_TOKEN="ops_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
    # Edit Containerfile, scripts, config files, etc.
 
    # Build and push using iago (pure Go, no Docker/Podman needed)
-   ./bin/iago container build db-01
+   ./bin/iago build db-01
 
    # Alternative: Use podman directly
    podman build -t ghcr.io/your-username/db-01:latest .
@@ -320,31 +323,32 @@ iago ignite --output /tmp/postgres-01.ign postgres-01
 iago ignite --strict=false postgres-01  # Disable strict mode
 iago gen postgres-01  # using alias with default output
 
-# Build all ignition files
-iago build
-iago build --strict=false  # Disable strict mode
+# Generate ignition file for existing machine
+iago ignite postgres-01
+iago ignite --output /tmp/postgres-01.ign postgres-01
+iago ignite --strict=false postgres-01  # Disable strict mode
 ```
 
-### Container Commands
+### Container Build Commands
 
 ```bash
 # Build and push container for a workload (pure Go - no Docker/Podman needed)
-iago container build db-01
+iago build db-01
 
 # Build all workloads
-iago container build --all
+iago build --all
 
 # Build and push to local registry for testing
-iago container build db-01 --local
+iago build db-01 --local
 
 # Build only, don't push anywhere
-iago container build db-01 --no-push
+iago build db-01 --no-push
 
 # Build with custom tag
-iago container build db-01 --tag v1.2.3
+iago build db-01 --tag v1.2.3
 
 # Build and sign with cosign keyless signing
-iago container build db-01 --sign
+iago build db-01 --sign
 ```
 
 ### Make Tasks
@@ -667,7 +671,7 @@ sudo systemctl status bootc-machine-name.service
 sudo journalctl -u bootc-machine-name.service -f
 ```
 
-You should see the hello world service logging messages, confirming the bootc container architecture is functioning correctly. From this working baseline, you can then customize the container by editing the `Containerfile` and rebuilding with `iago container build machine-name`.
+You should see the hello world service logging messages, confirming the bootc container architecture is functioning correctly. From this working baseline, you can then customize the container by editing the `Containerfile` and rebuilding with `iago build machine-name`.
 
 ### Example Containerfile Structure
 
@@ -1222,22 +1226,22 @@ Iago uses `github.com/google/go-containerregistry` to build containers without r
 
 ```bash
 # Build using iago's pure Go builder (recommended)
-./bin/iago container build machine-name
+./bin/iago build machine-name
 
 # Build all containers
-./bin/iago container build --all
+./bin/iago build --all
 
 # Build for local testing (pushes to localhost:5000)
-./bin/iago container build machine-name --local
+./bin/iago build machine-name --local
 
 # Build without pushing
-./bin/iago container build machine-name --no-push
+./bin/iago build machine-name --no-push
 
 # Build with custom tag
-./bin/iago container build machine-name --tag v1.2.3
+./bin/iago build machine-name --tag v1.2.3
 
 # Build and sign with cosign keyless signing
-./bin/iago container build machine-name --sign
+./bin/iago build machine-name --sign
 ```
 
 **Advantages of Pure Go Building:**
@@ -1359,7 +1363,7 @@ The generated container includes:
 
 ```bash
 # Build and push using iago (recommended)
-./bin/iago container build your-machine-name
+./bin/iago build your-machine-name
 
 # Alternative: Build using podman directly
 cd containers/your-machine-name
@@ -1435,7 +1439,7 @@ sudo cat /etc/iago/secrets/postgres-password
    - Modify `Containerfile` for your application
    - Update scripts in `scripts/` directory
    - Configure systemd services in `systemd/` directory
-3. **Build and push**: Use `iago container build my-new-service`
+3. **Build and push**: Use `iago build my-new-service`
 4. **Generate ignition**: Run `iago ignite my-new-service`
 
 ### Testing

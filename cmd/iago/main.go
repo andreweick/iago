@@ -30,7 +30,15 @@ func getContainerBuildHelpText() string {
 	baseHelp := `Build and push container for workload.
 
 Format: {registry}/{workload-name}:{tag}
-Example: ghcr.io/andreweick/my-app:latest`
+Example: ghcr.io/andreweick/my-app:latest
+
+Flags:
+  --all              Build all workloads
+  --local, -l        Push to local registry (localhost:5000)
+  --no-push          Build in memory only for testing, don't push to registry
+  --sign             Sign container with cosign after building
+  --tag value        Override default tag (default: "latest")
+  --token value      Registry token/password for authentication`
 
 	// Try to load current registry from defaults.toml
 	loader := machine.NewConfigLoader()
@@ -123,66 +131,42 @@ func main() {
 				},
 			},
 			{
-				Name:      "build",
-				Usage:     "Build ignition file for a specific machine",
-				ArgsUsage: "[machine-name]",
-				Action:    buildCommand,
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    "strict",
-						Aliases: []string{"s"},
-						Value:   true,
-						Usage:   "Enable strict mode (treat warnings as errors)",
-					},
-				},
-			},
-			{
 				Name:    "validate",
 				Aliases: []string{"val"},
 				Usage:   "Validate configuration",
 				Action:  validateCommand,
 			},
 			{
-				Name:  "container",
-				Usage: "Container operations",
-				Subcommands: []*cli.Command{
-					{
-						Name:      "build",
-						Usage:     getContainerBuildHelpText(),
-						ArgsUsage: "[workload-name]",
-						Action:    containerBuildCommand,
-						Flags: []cli.Flag{
-							&cli.BoolFlag{
-								Name:    "local",
-								Aliases: []string{"l"},
-								Usage:   "Push to local registry (localhost:5000)",
-							},
-							&cli.BoolFlag{
-								Name:  "no-push",
-								Usage: "Build in memory only for testing, don't push to registry (image is discarded after build)",
-							},
-							&cli.BoolFlag{
-								Name:  "sign",
-								Usage: "Sign container with cosign after building",
-							},
-							&cli.StringFlag{
-								Name:  "tag",
-								Usage: "Override default tag",
-								Value: "latest",
-							},
-							&cli.BoolFlag{
-								Name:  "all",
-								Usage: "Build all workloads",
-							},
-							&cli.StringFlag{
-								Name:  "username",
-								Usage: "Registry username for authentication",
-							},
-							&cli.StringFlag{
-								Name:  "token",
-								Usage: "Registry token/password for authentication (takes precedence over env vars and 1Password)",
-							},
-						},
+				Name:      "build",
+				Usage:     getContainerBuildHelpText(),
+				ArgsUsage: "[workload-name]",
+				Action:    containerBuildCommand,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "local",
+						Aliases: []string{"l"},
+						Usage:   "Push to local registry (localhost:5000)",
+					},
+					&cli.BoolFlag{
+						Name:  "no-push",
+						Usage: "Build in memory only for testing, don't push to registry (image is discarded after build)",
+					},
+					&cli.BoolFlag{
+						Name:  "sign",
+						Usage: "Sign container with cosign after building",
+					},
+					&cli.StringFlag{
+						Name:  "tag",
+						Usage: "Override default tag",
+						Value: "latest",
+					},
+					&cli.BoolFlag{
+						Name:  "all",
+						Usage: "Build all workloads",
+					},
+					&cli.StringFlag{
+						Name:  "token",
+						Usage: "Registry token/password for authentication (takes precedence over env vars and 1Password)",
 					},
 				},
 			},
@@ -369,29 +353,6 @@ func igniteCommand(ctx *cli.Context) error {
 	strictMode := ctx.Bool("strict")
 	if err := builder.GenerateMachineWithOptions(machineName, outputFile, strictMode); err != nil {
 		return exitWithError(fmt.Sprintf("Error generating machine: %v", err), 1)
-	}
-
-	fmt.Printf("Generated ignition for %s -> %s\n", machineName, outputFile)
-	return nil
-}
-
-func buildCommand(ctx *cli.Context) error {
-	if ctx.NArg() != 1 {
-		return exitWithError("Error: requires exactly one argument (machine name). Usage: iago build [flags] [machine-name]", 1)
-	}
-
-	machineName := ctx.Args().Get(0)
-
-	builder, err := build.NewBuilder()
-	if err != nil {
-		return exitWithError(fmt.Sprintf("Error creating builder: %v", err), 1)
-	}
-
-	outputFile := fmt.Sprintf("output/ignition/%s.ign", machineName)
-	strictMode := ctx.Bool("strict")
-
-	if err := builder.GenerateMachineWithOptions(machineName, outputFile, strictMode); err != nil {
-		return exitWithError(fmt.Sprintf("Error building machine %s: %v", machineName, err), 1)
 	}
 
 	fmt.Printf("Generated ignition for %s -> %s\n", machineName, outputFile)
@@ -777,7 +738,6 @@ func containerBuildCommand(ctx *cli.Context) error {
 	noPush := ctx.Bool("no-push")
 	sign := ctx.Bool("sign")
 	tag := ctx.String("tag")
-	username := ctx.String("username")
 	token := ctx.String("token")
 
 	// Load defaults to get registry configuration
@@ -788,16 +748,16 @@ func containerBuildCommand(ctx *cli.Context) error {
 	defaults := loader.GetDefaults()
 
 	if buildAll {
-		return buildAllWorkloads(ctx, defaults, local, noPush, sign, tag, username, token)
+		return buildAllWorkloads(ctx, defaults, local, noPush, sign, tag, "", token)
 	}
 
 	// Single workload build
 	if ctx.NArg() != 1 {
-		return exitWithError("Error: requires exactly one argument (workload name) or use --all flag. Usage: iago container build [flags] [workload-name]", 1)
+		return exitWithError("Error: requires exactly one argument (workload name) or use --all flag. Usage: iago build [flags] [workload-name]", 1)
 	}
 
 	workloadName := ctx.Args().Get(0)
-	return buildSingleWorkload(ctx, workloadName, defaults, local, noPush, sign, tag, username, token)
+	return buildSingleWorkload(ctx, workloadName, defaults, local, noPush, sign, tag, "", token)
 }
 
 func buildSingleWorkload(ctx *cli.Context, workloadName string, defaults machine.Defaults, local, noPush, sign bool, tag, username, token string) error {

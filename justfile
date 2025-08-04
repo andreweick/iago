@@ -48,8 +48,8 @@ help:
     @echo "     profile                     📈 Build with profiling"
     @echo ""
     @echo "📦 Container Operations:"
-    @echo "     build-all-containers        🏭 Build all containers"
-    @echo "     build-container-signed      ✍️  Build with signing"
+    @echo "     build-all-containers        🏭 Build all containers (iago build --all)"
+    @echo "     build-container-signed      ✍️  Build with signing (iago build --all --sign)"
     @echo "     deploy-machine NAME=[name]  🚢 Complete workflow"
     @echo "     logs NAME=[name]            📋 View container logs"
     @echo "     status NAME=[name]          📊 Check deployment status"
@@ -200,7 +200,8 @@ validate: build
 # Build all ignition files
 build-ignitions: build
     @echo "🔥 Building ignition files..."
-    -./bin/iago build
+    # Note: ignition building now requires specific machine names
+    # Use: just iago ignite machine-name
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 📦 Container Operations
@@ -209,12 +210,12 @@ build-ignitions: build
 # Build all containers
 build-all-containers: build
     @echo "🏭 Building all containers..."
-    -./bin/iago build-containers
+    -./bin/iago build --all
 
 # Build containers with signing
 build-container-signed: build
     @echo "✍️  Building containers with signing..."
-    -./bin/iago build-containers --sign
+    -./bin/iago build --all --sign
 
 # Deploy a complete machine workflow
 deploy-machine NAME: build
